@@ -1,0 +1,34 @@
+# Dependencias
+node_modules/
+
+# Entornos (NUNCA subir claves)
+.env
+.env.local
+.env.*.local
+
+# Base de datos
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Env files (todos)
+backend/.env*
+frontend/.env*
+!backend/.env.example
+!frontend/.env.example
+
+# Build outputs
+dist/
+.next/
+out/
+
+# Logs
+*.log
+/tmp/
+
+# macOS
+.DS_Store
+
+# TypeScript cache
+*.tsbuildinfo
