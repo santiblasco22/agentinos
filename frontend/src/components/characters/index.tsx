@@ -245,7 +245,26 @@ const COMPONENTS: Record<CharacterType, React.FC<CharacterProps>> = {
   porteno: PortenoCharacter,
 };
 
+const PNG_CHARACTERS = new Set<CharacterType>();
+
+function PngCharacter({ type, size = 100, isActive }: { type: CharacterType } & CharacterProps) {
+  return (
+    <div className="character-png-wrap" style={{ width: size, height: size * 1.2 }}>
+      <img
+        src={`/characters/${type}.png`}
+        alt={CHARACTER_INFO[type].name}
+        width={size}
+        height={size}
+        className={isActive ? 'character-png-active' : 'character-png'}
+        style={{ objectFit: 'contain', width: size, height: size }}
+      />
+      <div className={isActive ? 'character-png-shadow-active' : 'character-png-shadow'} />
+    </div>
+  );
+}
+
 export function Character({ type, ...props }: { type: CharacterType } & CharacterProps) {
+  if (PNG_CHARACTERS.has(type)) return <PngCharacter type={type} {...props} />;
   const Comp = COMPONENTS[type] ?? GauchoCharacter;
   return <Comp {...props} />;
 }

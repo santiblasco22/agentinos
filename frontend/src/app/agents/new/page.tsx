@@ -34,7 +34,7 @@ export default function NewAgentPage() {
   const [color, setColor] = useState(COLORS[0]);
 
   // Step 2
-  const [whatsappNumber, setWhatsappNumber] = useState('whatsapp:+54');
+  const [whatsappNumber, setWhatsappNumber] = useState('+54');
   const [mpToken, setMpToken] = useState('');
   const [model, setModel] = useState('claude-opus-4-8');
 
@@ -61,7 +61,7 @@ export default function NewAgentPage() {
     try {
       const agent = await createAgent({
         name: name.trim(), mode, character, color,
-        whatsappNumber: whatsappNumber.trim() || undefined,
+        whatsappNumber: whatsappNumber.trim() ? `whatsapp:${whatsappNumber.trim()}` : undefined,
         mercadopagoToken: mpToken.trim(),
         model, currency, timezone,
         maxResponsesPerDay: maxPerDay,
@@ -151,8 +151,8 @@ export default function NewAgentPage() {
               <div className="flex flex-col gap-5">
                 <div>
                   <label className="block text-xs font-semibold mb-1.5" style={{ color: '#6B7280' }}>NÚMERO DE WHATSAPP (Twilio)</label>
-                  <input className="input-dark" placeholder="whatsapp:+54911..." value={whatsappNumber} onChange={e => setWhatsappNumber(e.target.value)} />
-                  <p className="text-xs mt-1" style={{ color: '#6B7280' }}>Formato: whatsapp:+54911XXXXXXXX</p>
+                  <input className="input-dark" placeholder="+54911..." value={whatsappNumber} onChange={e => setWhatsappNumber(e.target.value)} />
+                  <p className="text-xs mt-1" style={{ color: '#6B7280' }}>Formato: +54911XXXXXXXX</p>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold mb-1.5" style={{ color: '#6B7280' }}>TOKEN DE MERCADOPAGO (opcional)</label>

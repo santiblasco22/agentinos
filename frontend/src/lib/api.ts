@@ -101,6 +101,14 @@ export const getConversations = (agentId: string) =>
 export const getConversation = (agentId: string, phone: string) =>
   request<Message[]>(`/agents/${agentId}/conversations/${encodeURIComponent(phone)}`);
 
-export interface AgentStats { messagesToday: number; messagesTotal: number; responsesToday: number; responsesTotal: number; activeConversations: number; }
+export interface AgentStats { messagesToday: number; messagesTotal: number; responsesToday: number; responsesTotal: number; activeConversations: number; estimatedCostUSD: number; model: string; }
 export const getAgentStats = (agentId: string) =>
   request<AgentStats>(`/agents/${agentId}/stats`);
+
+// Playground
+export const playgroundChat = (agentId: string, message: string) =>
+  request<{ reply: string }>(`/agents/${agentId}/playground`, { method: 'POST', body: JSON.stringify({ message }) });
+export const playgroundHistory = (agentId: string) =>
+  request<Message[]>(`/agents/${agentId}/playground`);
+export const playgroundClear = (agentId: string) =>
+  request<void>(`/agents/${agentId}/playground`, { method: 'DELETE' });

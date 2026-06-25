@@ -127,6 +127,80 @@ body {
   50% { opacity: 0.4; r: 6; }
 }
 
+/* PNG character animations */
+.character-png-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.character-png {
+  animation: pngFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 12px 18px rgba(0,0,0,0.35));
+  transform-origin: bottom center;
+}
+
+.character-png-active {
+  animation: pngFloatFast 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 14px 22px rgba(0,0,0,0.4));
+  transform-origin: bottom center;
+}
+
+@keyframes pngFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(-0.5deg);
+    filter: drop-shadow(0 12px 18px rgba(0,0,0,0.35));
+  }
+  25% { transform: translateY(-4px) rotate(0.3deg); }
+  50% {
+    transform: translateY(-10px) rotate(0.8deg);
+    filter: drop-shadow(0 20px 28px rgba(0,0,0,0.2));
+  }
+  75% { transform: translateY(-5px) rotate(0.2deg); }
+}
+
+@keyframes pngFloatFast {
+  0%, 100% {
+    transform: translateY(0px) rotate(-0.8deg);
+    filter: drop-shadow(0 12px 18px rgba(0,0,0,0.35));
+  }
+  25% { transform: translateY(-5px) rotate(0.5deg); }
+  50% {
+    transform: translateY(-12px) rotate(1deg);
+    filter: drop-shadow(0 22px 30px rgba(0,0,0,0.2));
+  }
+  75% { transform: translateY(-6px) rotate(0.3deg); }
+}
+
+.character-png-shadow {
+  width: 60%;
+  height: 10px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: pngShadow 3s ease-in-out infinite;
+  margin-top: -4px;
+}
+
+.character-png-shadow-active {
+  width: 60%;
+  height: 10px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: pngShadowFast 1.5s ease-in-out infinite;
+  margin-top: -4px;
+}
+
+@keyframes pngShadow {
+  0%, 100% { transform: scaleX(1);   opacity: 0.6; }
+  50%       { transform: scaleX(0.6); opacity: 0.25; }
+}
+
+@keyframes pngShadowFast {
+  0%, 100% { transform: scaleX(1);   opacity: 0.6; }
+  50%       { transform: scaleX(0.5); opacity: 0.2; }
+}
+
 /* Neon button */
 .btn-neon {
   background: linear-gradient(135deg, #00D4FF, #0096B4);

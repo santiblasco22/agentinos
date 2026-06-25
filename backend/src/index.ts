@@ -6,6 +6,7 @@ import agentRoutes from './routes/agents';
 import catalogRoutes from './routes/catalog';
 import conversationRoutes from './routes/conversations';
 import webhookRoutes from './routes/webhook';
+import playgroundRoutes from './routes/playground';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -19,6 +20,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use('/auth', authRoutes);
 app.use('/agents', agentRoutes);
+app.use('/agents', playgroundRoutes);
 app.use('/', catalogRoutes);
 app.use('/', conversationRoutes);
 app.use('/', webhookRoutes);
