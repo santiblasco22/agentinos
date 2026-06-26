@@ -7,6 +7,7 @@ import Navbar from '../../../components/Navbar';
 import { Character, CHARACTER_INFO, type CharacterType } from '../../../components/characters';
 import { Save, Trash2, Plus, ArrowLeft, ToggleLeft, ToggleRight, Send, RotateCcw, MessageSquare, User, Bot, DollarSign } from 'lucide-react';
 import { toggleAgent } from '../../../lib/api';
+import { toast } from '../../../components/Toaster';
 
 const TABS = ['General', 'Personaje', 'Catálogo', 'Horarios', 'Límites', 'Avanzado', 'Playground'] as const;
 type Tab = typeof TABS[number];
@@ -32,7 +33,6 @@ export default function AgentPage() {
   const [stats, setStats] = useState<AgentStats | null>(null);
   const [tab, setTab] = useState<Tab>('General');
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState('');
 
   const [form, setForm] = useState<Partial<Agent>>({});
 
@@ -78,15 +78,14 @@ export default function AgentPage() {
   }, [pgMessages]);
 
   const save = async (data: Partial<Agent>) => {
-    setSaving(true); setMsg('');
+    setSaving(true);
     try {
       const payload = { ...data, whatsappNumber: data.whatsappNumber ? `whatsapp:${data.whatsappNumber}` : data.whatsappNumber };
       const updated = await updateAgent(id, payload);
       setAgent(updated);
       setForm({ ...updated, whatsappNumber: updated.whatsappNumber?.replace('whatsapp:', '') ?? '' });
-      setMsg('Guardado ✓');
-      setTimeout(() => setMsg(''), 2000);
-    } catch (e) { setMsg('Error al guardar'); }
+      toast.success('Cambios guardados');
+    } catch (e) { toast.error('Error al guardar'); }
     finally { setSaving(false); }
   };
 
@@ -94,6 +93,7 @@ export default function AgentPage() {
     if (!agent) return;
     const { isActive } = await toggleAgent(id);
     setAgent({ ...agent, isActive });
+    toast.info(isActive ? 'Agente activado' : 'Agente desactivado');
   };
 
   const handleDelete = async () => {
@@ -208,7 +208,6 @@ export default function AgentPage() {
               <label className="block text-xs font-semibold mb-1.5" style={{ color: '#6B7280' }}>INSTRUCCIONES EXTRAS (prompt personalizado)</label>
               <textarea className="input-dark resize-none" rows={5} value={form.customPrompt ?? ''} onChange={e => setForm({ ...form, customPrompt: e.target.value })} placeholder="Ej: Siempre saludá con '¡Bienvenido!' y ofrecé descuentos en días lluviosos..." />
             </div>
-            {msg && <div className="text-sm text-center" style={{ color: msg.includes('Error') ? '#EF4444' : '#10B981' }}>{msg}</div>}
             <button onClick={() => save(form)} disabled={saving} className="btn-neon flex items-center gap-2 self-start mt-2">
               <Save size={16} /> {saving ? 'Guardando...' : 'Guardar cambios'}
             </button>
@@ -248,7 +247,6 @@ export default function AgentPage() {
                 <p className="text-xs" style={{ color: '#6B7280' }}>{CHARACTER_INFO[form.character as CharacterType]?.description}</p>
               </div>
             )}
-            {msg && <div className="text-sm" style={{ color: msg.includes('Error') ? '#EF4444' : '#10B981' }}>{msg}</div>}
             <button onClick={() => save({ character: form.character, color: form.color })} disabled={saving} className="btn-neon flex items-center gap-2 self-start">
               <Save size={16} /> {saving ? 'Guardando...' : 'Guardar personaje'}
             </button>
@@ -276,7 +274,7 @@ export default function AgentPage() {
                           <td className="py-2.5 text-right">${p.price.toLocaleString('es-AR')}</td>
                           <td className="py-2.5 text-right">{p.stock}</td>
                           <td className="py-2.5 text-right">
-                            <button onClick={async () => { await deleteProduct(p.id); setProducts(await getProducts(id)); }} style={{ color: '#EF4444' }}><Trash2 size={14} /></button>
+                            <button onClick={async () => { await deleteProduct(p.id); setProducts(await getProducts(id)); toast.success('Producto eliminado'); }} style={{ color: '#EF4444' }}><Trash2 size={14} /></button>
                           </td>
                         </tr>
                       ))}
@@ -297,6 +295,7 @@ export default function AgentPage() {
                   await createProduct(id, { name: newProduct.name, description: newProduct.description, price: Number(newProduct.price), stock: Number(newProduct.stock), category: newProduct.category });
                   setNewProduct({ name: '', description: '', price: '', stock: '', category: '' });
                   setProducts(await getProducts(id));
+                  toast.success('Producto agregado');
                 }} className="btn-neon flex items-center gap-2 text-sm">
                   <Plus size={15} /> Agregar producto
                 </button>
@@ -319,7 +318,7 @@ export default function AgentPage() {
                           <td className="py-2.5 text-right">${s.price.toLocaleString('es-AR')}</td>
                           <td className="py-2.5 text-right">{s.durationMinutes} min</td>
                           <td className="py-2.5 text-right">
-                            <button onClick={async () => { await deleteService(s.id); setServices(await getServices(id)); }} style={{ color: '#EF4444' }}><Trash2 size={14} /></button>
+                            <button onClick={async () => { await deleteService(s.id); setServices(await getServices(id)); toast.success('Servicio eliminado'); }} style={{ color: '#EF4444' }}><Trash2 size={14} /></button>
                           </td>
                         </tr>
                       ))}
@@ -340,6 +339,7 @@ export default function AgentPage() {
                   await createService(id, { name: newService.name, description: newService.description, price: Number(newService.price), durationMinutes: Number(newService.durationMinutes), category: newService.category });
                   setNewService({ name: '', description: '', price: '', durationMinutes: '', category: '' });
                   setServices(await getServices(id));
+                  toast.success('Servicio agregado');
                 }} className="btn-neon flex items-center gap-2 text-sm">
                   <Plus size={15} /> Agregar servicio
                 </button>
@@ -388,7 +388,6 @@ export default function AgentPage() {
                 })}
               </div>
             </div>
-            {msg && <div className="text-sm" style={{ color: msg.includes('Error') ? '#EF4444' : '#10B981' }}>{msg}</div>}
             <button onClick={() => save({ workingDays: form.workingDays, workingHours: form.workingHours })} disabled={saving} className="btn-neon flex items-center gap-2 self-start">
               <Save size={16} /> {saving ? 'Guardando...' : 'Guardar horarios'}
             </button>
@@ -439,7 +438,6 @@ export default function AgentPage() {
                 <input className="input-dark" type="number" min={0} value={form.maxResponsesTotal ?? 0} onChange={e => setForm({ ...form, maxResponsesTotal: Number(e.target.value) })} />
               </div>
             </div>
-            {msg && <div className="text-sm" style={{ color: msg.includes('Error') ? '#EF4444' : '#10B981' }}>{msg}</div>}
             <button onClick={() => save({ maxResponsesPerDay: form.maxResponsesPerDay, maxResponsesTotal: form.maxResponsesTotal })} disabled={saving} className="btn-neon flex items-center gap-2 self-start">
               <Save size={16} /> {saving ? 'Guardando...' : 'Guardar límites'}
             </button>
@@ -482,7 +480,6 @@ export default function AgentPage() {
                 </select>
               </div>
             </div>
-            {msg && <div className="text-sm" style={{ color: msg.includes('Error') ? '#EF4444' : '#10B981' }}>{msg}</div>}
             <button onClick={() => save({ model: form.model, maxTokens: form.maxTokens, currency: form.currency, timezone: form.timezone })} disabled={saving} className="btn-neon flex items-center gap-2 self-start">
               <Save size={16} /> {saving ? 'Guardando...' : 'Guardar config'}
             </button>
