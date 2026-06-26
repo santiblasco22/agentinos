@@ -34,7 +34,7 @@ export default function NewAgentPage() {
   const [color, setColor] = useState(COLORS[0]);
 
   // Step 2
-  const [whatsappNumber, setWhatsappNumber] = useState('+54');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
   const [mpToken, setMpToken] = useState('');
   const [model, setModel] = useState('claude-opus-4-8');
 

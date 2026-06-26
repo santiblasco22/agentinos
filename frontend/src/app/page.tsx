@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { login, register, checkSetupRequired } from '../lib/api';
 import { setToken, isLoggedIn } from '../lib/auth';
@@ -26,7 +26,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const randomChar = useMemo<CharacterType>(() => CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)], []);
+  // El servidor y el primer render del cliente usan el mismo personaje (CHARACTERS[0]);
+  // recién después de montar elegimos uno al azar. Así no hay mismatch de hidratación.
+  const [randomChar, setRandomChar] = useState<CharacterType>(CHARACTERS[0]);
+
+  useEffect(() => {
+    setRandomChar(CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)]);
+  }, []);
 
   useEffect(() => {
     if (isLoggedIn()) { router.push('/dashboard'); return; }

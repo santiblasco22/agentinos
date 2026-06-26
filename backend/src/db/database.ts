@@ -141,6 +141,17 @@ function rowToAgent(row: any): Agent {
   };
 }
 
+// Normaliza el número de WhatsApp: devuelve null si no es un número real
+// (vacío, solo "whatsapp:", o sin dígitos suficientes como "+54"). Esto evita
+// colisiones de la restricción UNIQUE cuando se crean agentes sin número.
+export function normalizeWhatsapp(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  const num = trimmed.replace(/^whatsapp:/, '').trim();
+  if (!num || !/\d{6,}/.test(num)) return null;
+  return trimmed.startsWith('whatsapp:') ? trimmed : `whatsapp:${num}`;
+}
+
 export function createAgent(userId: string, data: Partial<Agent>): Agent {
   const id = crypto.randomUUID();
   db.prepare(`
@@ -153,7 +164,7 @@ export function createAgent(userId: string, data: Partial<Agent>): Agent {
     data.name ?? 'Nuevo Agente',
     data.character ?? 'gaucho',
     data.mode ?? 'ecommerce',
-    data.whatsappNumber ?? null,
+    normalizeWhatsapp(data.whatsappNumber),
     data.mercadopagoToken ?? '',
     data.customPrompt ?? '',
     data.model ?? 'claude-opus-4-8',
@@ -199,7 +210,10 @@ export function updateAgent(id: string, data: Partial<Agent>): void {
 
   for (const [key, col] of Object.entries(directMap)) {
     const val = (data as any)[key];
-    if (val !== undefined) { fields.push(`${col} = ?`); values.push(val); }
+    if (val !== undefined) {
+      fields.push(`${col} = ?`);
+      values.push(key === 'whatsappNumber' ? normalizeWhatsapp(val) : val);
+    }
   }
   if (data.isActive !== undefined) { fields.push('is_active = ?'); values.push(data.isActive ? 1 : 0); }
   if (data.workingHours !== undefined) { fields.push('working_hours = ?'); values.push(JSON.stringify(data.workingHours)); }
