@@ -333,3 +333,113 @@ body {
   color: #6B7280;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* === UX/UI v2 === */
+
+/* Dot grid background */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #00D4FF 0%, #7C3AED 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card entrance animation */
+.card-entrance { animation: cardEntrance 0.45s ease both; }
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.30s; }
+
+@keyframes cardEntrance {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Dynamic glow border on hover */
+.glow-border { transition: box-shadow 0.25s ease; }
+.glow-border:hover {
+  box-shadow: 0 0 0 2px var(--glow-color, rgba(0,212,255,0.4)),
+              0 12px 40px var(--glow-color, rgba(0,212,255,0.12));
+}
+
+/* Big stat number */
+.stat-number {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* Card accent top bar */
+.card-accent-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
+  z-index: 1;
+}
+
+/* Agent card wrapper */
+.agent-card-wrap {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Pill button */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+.pill:hover { filter: brightness(1.15); }
+
+/* Label XS */
+.label-xs {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6B7280;
+}
+
+/* Pulse dot (green — active) */
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  flex-shrink: 0;
+  animation: pulseDot 2s infinite;
+}
+
+/* Pulse dot (red — inactive) */
+.pulse-dot-red {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #EF4444;
+  flex-shrink: 0;
+  opacity: 0.55;
+}
+
+@keyframes pulseDot {
+  0%   { box-shadow: 0 0 0 0   rgba(16,185,129,0.55); }
+  70%  { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0   rgba(16,185,129,0); }
+}

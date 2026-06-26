@@ -8,7 +8,7 @@ import { useAgentsStore } from '../../store/useAgentsStore';
 import Navbar from '../../components/Navbar';
 import StatsBar from '../../components/StatsBar';
 import AgentCard from '../../components/AgentCard';
-import { Plus, Bot } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Character } from '../../components/characters';
 
 export default function DashboardPage() {
@@ -32,15 +32,24 @@ export default function DashboardPage() {
     mutate();
   };
 
+  const firstName = userName.split(' ')[0];
+
   return (
     <div className="min-h-screen">
       <Navbar userName={userName} />
-      <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 dot-grid min-h-[calc(100vh-56px)]">
         <StatsBar agents={agents} />
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold" style={{ color: '#F0F4FF' }}>Mis Agentes</h2>
+          <div>
+            {firstName && (
+              <p className="text-sm mb-0.5" style={{ color: '#6B7280' }}>
+                Hola, <span style={{ color: '#F0F4FF', fontWeight: 600 }}>{firstName}</span> 👋
+              </p>
+            )}
+            <h2 className="text-2xl font-bold" style={{ color: '#F0F4FF' }}>Mis Agentes</h2>
+          </div>
           <button onClick={() => router.push('/agents/new')} className="btn-neon flex items-center gap-2">
             <Plus size={18} />
             Nuevo Agente
@@ -65,8 +74,8 @@ export default function DashboardPage() {
         {/* Agent grid */}
         {agents.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {agents.map((agent) => (
-              <AgentCard key={agent.id} agent={agent} onToggle={handleToggle} />
+            {agents.map((agent, i) => (
+              <AgentCard key={agent.id} agent={agent} onToggle={handleToggle} index={i} />
             ))}
           </div>
         )}
