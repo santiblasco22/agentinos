@@ -29,8 +29,17 @@ router.post('/', (req: Request, res: Response) => {
   if (!VALID_MODES.includes(req.body.mode)) { res.status(400).json({ error: 'Modo inválido' }); return; }
   const validationError = validateAgentPayload(req.body);
   if (validationError) { res.status(400).json({ error: validationError }); return; }
-  const agent = createAgent(req.userId!, req.body);
-  res.status(201).json(agent);
+  try {
+    const agent = createAgent(req.userId!, req.body);
+    res.status(201).json(agent);
+  } catch (e: any) {
+    if (e?.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      res.status(409).json({ error: 'Ya existe un agente con ese número de WhatsApp' });
+      return;
+    }
+    console.error('Error creando agente:', e);
+    res.status(500).json({ error: 'Error al crear el agente' });
+  }
 });
 
 router.get('/:id', (req: Request, res: Response) => {
@@ -44,8 +53,17 @@ router.put('/:id', (req: Request, res: Response) => {
   if (!agent || agent.userId !== req.userId) { res.status(404).json({ error: 'Agente no encontrado' }); return; }
   const validationError = validateAgentPayload(req.body);
   if (validationError) { res.status(400).json({ error: validationError }); return; }
-  updateAgent(req.params.id, req.body);
-  res.json(getAgentById(req.params.id));
+  try {
+    updateAgent(req.params.id, req.body);
+    res.json(getAgentById(req.params.id));
+  } catch (e: any) {
+    if (e?.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      res.status(409).json({ error: 'Ya existe un agente con ese número de WhatsApp' });
+      return;
+    }
+    console.error('Error actualizando agente:', e);
+    res.status(500).json({ error: 'Error al actualizar el agente' });
+  }
 });
 
 router.delete('/:id', (req: Request, res: Response) => {
