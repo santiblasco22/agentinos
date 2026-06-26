@@ -22,7 +22,7 @@ function seedUser() {
   const existing = db.getUserByEmail(DEMO_EMAIL);
   if (!existing) {
     const hash = bcrypt.hashSync(DEMO_PASSWORD, 10);
-    const user = db.createUser(DEMO_EMAIL, hash, 'Usuario Demo');
+    const user = db.createUser({ email: DEMO_EMAIL, passwordHash: hash, name: 'Usuario Demo' });
     console.log(`✅ Usuario creado: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
     return user;
   }

@@ -16,7 +16,7 @@ const NAME = process.env.SEED_NAME ?? 'Admin';
 function run() {
   // Usuario
   const existing = db.getUserByEmail(EMAIL);
-  const user = existing ?? db.createUser(EMAIL, bcrypt.hashSync(PASSWORD, 10), NAME);
+  const user = existing ?? db.createUser({ email: EMAIL, passwordHash: bcrypt.hashSync(PASSWORD, 10), name: NAME, company: 'Agentinos' });
   if (!existing) {
     console.log(`✅ Usuario creado:`);
     console.log(`   Email:    ${EMAIL}`);
