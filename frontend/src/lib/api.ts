@@ -21,19 +21,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 // Auth
+export interface AuthUser { id: string; email: string; name: string; company?: string; phone?: string; }
+export interface RegisterInput { name: string; email: string; password: string; company?: string; phone?: string; }
+
 export const login = (email: string, password: string) =>
-  request<{ token: string; user: { id: string; email: string; name: string } }>('/auth/login', {
+  request<{ token: string; user: AuthUser }>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
 
-export const register = (email: string, password: string, name: string) =>
-  request<{ token: string; user: { id: string; email: string; name: string } }>('/auth/register', {
+export const register = (data: RegisterInput) =>
+  request<{ token: string; user: AuthUser }>('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email, password, name }),
+    body: JSON.stringify(data),
   });
 
-export const getMe = () => request<{ id: string; email: string; name: string }>('/auth/me');
+export const getMe = () => request<AuthUser>('/auth/me');
 
 export const checkSetupRequired = () =>
   request<{ setupRequired: boolean }>('/auth/setup-required');

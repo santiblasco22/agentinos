@@ -8,6 +8,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  company?: string;
+  phone?: string;
 }
 
 export interface Agent {

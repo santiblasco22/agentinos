@@ -88,24 +88,44 @@ db.exec(`
   );
 `);
 
+// ── Migraciones idempotentes ───────────────────────────────
+
+function ensureColumn(table: string, column: string, definition: string): void {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+ensureColumn('users', 'company', 'TEXT');
+ensureColumn('users', 'phone', 'TEXT');
+
 // ── Users ──────────────────────────────────────────────────
 
-export function createUser(email: string, passwordHash: string, name: string): User {
+interface NewUser {
+  email: string;
+  passwordHash: string;
+  name: string;
+  company?: string | null;
+  phone?: string | null;
+}
+
+export function createUser(data: NewUser): User {
   const id = crypto.randomUUID();
-  db.prepare('INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)')
-    .run(id, email, passwordHash, name);
-  return { id, email, name };
+  db.prepare('INSERT INTO users (id, email, password_hash, name, company, phone) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(id, data.email, data.passwordHash, data.name, data.company ?? null, data.phone ?? null);
+  return { id, email: data.email, name: data.name, company: data.company ?? undefined, phone: data.phone ?? undefined };
 }
 
 export function getUserByEmail(email: string): (User & { passwordHash: string }) | undefined {
   const row = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
   if (!row) return undefined;
-  return { id: row.id, email: row.email, name: row.name, passwordHash: row.password_hash };
+  return { id: row.id, email: row.email, name: row.name, company: row.company ?? undefined, phone: row.phone ?? undefined, passwordHash: row.password_hash };
 }
 
 export function getUserById(id: string): User | undefined {
-  const row = db.prepare('SELECT id, email, name FROM users WHERE id = ?').get(id) as any;
-  return row ? { id: row.id, email: row.email, name: row.name } : undefined;
+  const row = db.prepare('SELECT id, email, name, company, phone FROM users WHERE id = ?').get(id) as any;
+  return row ? { id: row.id, email: row.email, name: row.name, company: row.company ?? undefined, phone: row.phone ?? undefined } : undefined;
 }
 
 export function countUsers(): number {
