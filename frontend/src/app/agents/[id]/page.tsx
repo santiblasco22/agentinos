@@ -6,11 +6,13 @@ import { isLoggedIn } from '../../../lib/auth';
 import Navbar from '../../../components/Navbar';
 import { Character, CHARACTER_INFO, type CharacterType } from '../../../components/characters';
 import { AI_TIERS, tierFor } from '../../../lib/tiers';
+import { INTEGRATIONS } from '../../../lib/integrations';
+import { Plug } from 'lucide-react';
 import { Save, Trash2, Plus, ArrowLeft, ToggleLeft, ToggleRight, Send, RotateCcw, MessageSquare, User, Bot, DollarSign, BookOpen } from 'lucide-react';
 import { toggleAgent } from '../../../lib/api';
 import { toast } from '../../../components/Toaster';
 
-const TABS = ['General', 'Entrenamiento', 'Personaje', 'Catálogo', 'Horarios', 'Límites', 'Avanzado', 'Playground'] as const;
+const TABS = ['General', 'Entrenamiento', 'Personaje', 'Catálogo', 'Integraciones', 'Horarios', 'Límites', 'Avanzado', 'Playground'] as const;
 type Tab = typeof TABS[number];
 
 const CURRENCIES = ['ARS', 'USD', 'CLP', 'BRL', 'MXN'];
@@ -119,6 +121,13 @@ export default function AgentPage() {
     setPgMessages([]);
   };
 
+  // Actualiza la config de una integración en el form (inmutable).
+  const updateInteg = (key: string, fn: (cur: { enabled: boolean; credentials: Record<string, string> }) => { enabled: boolean; credentials: Record<string, string> }) =>
+    setForm(f => {
+      const cur = f.integrations?.[key] ?? { enabled: false, credentials: {} };
+      return { ...f, integrations: { ...(f.integrations ?? {}), [key]: fn(cur) } };
+    });
+
   if (!agent) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="animate-float">
@@ -186,7 +195,7 @@ export default function AgentPage() {
           {TABS.map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-3 text-sm font-semibold transition-all whitespace-nowrap ${tab === t ? 'tab-active' : 'tab-inactive'}`}>
-              {t === 'Playground' ? '▶ Playground' : t === 'Entrenamiento' ? '🎓 Entrenamiento' : t}
+              {t === 'Playground' ? '▶ Playground' : t === 'Entrenamiento' ? '🎓 Entrenamiento' : t === 'Integraciones' ? '🔌 Integraciones' : t}
             </button>
           ))}
         </div>
@@ -439,6 +448,88 @@ export default function AgentPage() {
                 </button>
               </>
             )}
+          </div>
+        )}
+
+        {/* INTEGRACIONES */}
+        {tab === 'Integraciones' && (
+          <div className="glass-card p-6 flex flex-col gap-5">
+            <div className="flex items-center gap-2">
+              <Plug size={18} color="#00D4FF" />
+              <h3 className="font-bold text-lg">Integraciones de este agente</h3>
+            </div>
+            <p className="text-sm -mt-3" style={{ color: '#6B7280' }}>
+              Cada agente usa sus propias credenciales. Conectá las cuentas de <span style={{ color: '#9CA3AF' }}>{agent.name}</span>.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              {INTEGRATIONS.map(it => {
+                const Icon = it.icon;
+                const usesToken = it.usesTokenField;
+                const cfg = form.integrations?.[it.key] ?? { enabled: false, credentials: {} };
+                const connected = usesToken ? !!form.mercadopagoToken?.trim() : cfg.enabled;
+                return (
+                  <div key={it.key} className="p-4 rounded-xl border flex flex-col gap-3" style={{ borderColor: connected ? `${it.color}55` : 'rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${it.color}1A`, border: `1px solid ${it.color}40` }}>
+                        <Icon size={18} color={it.color} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm">{it.name}</span>
+                          {it.status === 'pronto'
+                            ? <span className="badge text-xs" style={{ background: 'rgba(255,255,255,0.06)', color: '#9CA3AF' }}>Beta</span>
+                            : connected && <span className="badge badge-green text-xs">● Conectado</span>}
+                        </div>
+                        <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{it.desc}</div>
+                      </div>
+                      {!usesToken && (
+                        <button
+                          onClick={() => updateInteg(it.key, c => ({ ...c, enabled: !c.enabled }))}
+                          className={`relative w-12 h-6 rounded-full transition-all duration-300 flex-shrink-0 ${cfg.enabled ? 'bg-green-500' : 'bg-gray-600'}`}
+                          title={cfg.enabled ? 'Desactivar' : 'Activar'}>
+                          <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 ${cfg.enabled ? 'left-7' : 'left-1'}`} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Campos de credenciales */}
+                    {usesToken ? (
+                      <input
+                        className="input-dark text-sm"
+                        type="password"
+                        placeholder={it.fields[0]?.placeholder ?? ''}
+                        value={form.mercadopagoToken ?? ''}
+                        onChange={e => setForm({ ...form, mercadopagoToken: e.target.value })}
+                      />
+                    ) : it.fields.length > 0 ? (
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        {it.fields.map(fld => (
+                          <input
+                            key={fld.key}
+                            className="input-dark text-sm"
+                            type={fld.secret ? 'password' : 'text'}
+                            placeholder={fld.label}
+                            value={cfg.credentials[fld.key] ?? ''}
+                            onChange={e => updateInteg(it.key, c => ({ ...c, credentials: { ...c.credentials, [fld.key]: e.target.value } }))}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs" style={{ color: '#4B5563' }}>No requiere credenciales.</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button onClick={() => save({ integrations: form.integrations, mercadopagoToken: form.mercadopagoToken })} disabled={saving} className="btn-neon flex items-center gap-2 self-start">
+              <Save size={16} /> {saving ? 'Guardando...' : 'Guardar integraciones'}
+            </button>
+
+            <p className="text-xs" style={{ color: '#4B5563' }}>
+              Solo <span style={{ color: '#9CA3AF' }}>Mercado Pago</span> está conectado de verdad. Las demás guardan las credenciales por agente, pero la sincronización todavía no está activa (requieren OAuth/acuerdo con cada plataforma).
+            </p>
           </div>
         )}
 

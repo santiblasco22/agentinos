@@ -14,6 +14,13 @@ export interface Example {
   assistant: string;
 }
 
+// Config de una integración para UN agente. Cada cliente pone sus propias
+// credenciales (store id, access token, etc.) — varían según la integración.
+export interface AgentIntegration {
+  enabled: boolean;
+  credentials: Record<string, string>;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -34,6 +41,7 @@ export interface Agent {
   knowledge: string;
   faqs: Faq[];
   examples: Example[];
+  integrations: Record<string, AgentIntegration>;
   model: string;
   currency: string;
   timezone: string;

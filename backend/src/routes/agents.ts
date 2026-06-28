@@ -35,6 +35,21 @@ function validateAgentPayload(body: Record<string, unknown>): string | null {
       if (e.user.length > 500 || e.assistant.length > 1000) return 'Ejemplo demasiado largo (cliente máx 500, respuesta máx 1000)';
     }
   }
+  if (body.integrations !== undefined) {
+    const integ = body.integrations;
+    if (typeof integ !== 'object' || integ === null || Array.isArray(integ)) return 'Integraciones inválidas';
+    for (const [key, cfg] of Object.entries(integ as Record<string, any>)) {
+      if (key.length > 40) return 'Clave de integración inválida';
+      if (!cfg || typeof cfg !== 'object') return 'Config de integración inválida';
+      if (typeof cfg.enabled !== 'boolean') return 'Cada integración necesita un flag enabled';
+      if (cfg.credentials !== undefined) {
+        if (typeof cfg.credentials !== 'object' || cfg.credentials === null) return 'Credenciales inválidas';
+        for (const v of Object.values(cfg.credentials)) {
+          if (typeof v !== 'string' || (v as string).length > 2000) return 'Credencial inválida o demasiado larga';
+        }
+      }
+    }
+  }
   return null;
 }
 

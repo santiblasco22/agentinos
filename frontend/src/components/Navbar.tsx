@@ -5,7 +5,6 @@ import { LogOut } from 'lucide-react';
 
 const LINKS = [
   { href: '/dashboard', label: 'Agentes' },
-  { href: '/integraciones', label: 'Integraciones' },
   { href: '/planes', label: 'Planes' },
 ];
 

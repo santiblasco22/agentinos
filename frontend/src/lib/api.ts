@@ -44,6 +44,7 @@ export const checkSetupRequired = () =>
 // Agents
 export interface Faq { q: string; a: string; }
 export interface Example { user: string; assistant: string; }
+export interface AgentIntegration { enabled: boolean; credentials: Record<string, string>; }
 
 export interface Agent {
   id: string;
@@ -57,6 +58,7 @@ export interface Agent {
   knowledge: string;
   faqs: Faq[];
   examples: Example[];
+  integrations: Record<string, AgentIntegration>;
   model: string;
   currency: string;
   timezone: string;

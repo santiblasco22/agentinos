@@ -104,6 +104,8 @@ ensureColumn('users', 'phone', 'TEXT');
 ensureColumn('agents', 'knowledge', "TEXT NOT NULL DEFAULT ''");
 ensureColumn('agents', 'faqs', "TEXT NOT NULL DEFAULT '[]'");
 ensureColumn('agents', 'examples', "TEXT NOT NULL DEFAULT '[]'");
+// Integraciones por agente: cada cliente tiene sus propias credenciales.
+ensureColumn('agents', 'integrations', "TEXT NOT NULL DEFAULT '{}'");
 
 // ── Users ──────────────────────────────────────────────────
 
@@ -151,6 +153,16 @@ function safeJsonArray<T>(raw: unknown): T[] {
   }
 }
 
+function safeJsonObject<T extends object>(raw: unknown): T {
+  if (typeof raw !== 'string' || !raw) return {} as T;
+  try {
+    const v = JSON.parse(raw);
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : ({} as T);
+  } catch {
+    return {} as T;
+  }
+}
+
 function rowToAgent(row: any): Agent {
   return {
     id: row.id,
@@ -164,6 +176,7 @@ function rowToAgent(row: any): Agent {
     knowledge: row.knowledge ?? '',
     faqs: safeJsonArray(row.faqs),
     examples: safeJsonArray(row.examples),
+    integrations: safeJsonObject(row.integrations),
     model: row.model,
     currency: row.currency,
     timezone: row.timezone,
@@ -195,9 +208,9 @@ export function createAgent(userId: string, data: Partial<Agent>): Agent {
   const id = crypto.randomUUID();
   db.prepare(`
     INSERT INTO agents (id, user_id, name, character, mode, whatsapp_number, mercadopago_token,
-      custom_prompt, knowledge, faqs, examples, model, currency, timezone, working_hours, working_days,
+      custom_prompt, knowledge, faqs, examples, integrations, model, currency, timezone, working_hours, working_days,
       max_tokens, max_responses_per_day, max_responses_total, is_active, color)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id, userId,
     data.name ?? 'Nuevo Agente',
@@ -209,6 +222,7 @@ export function createAgent(userId: string, data: Partial<Agent>): Agent {
     data.knowledge ?? '',
     JSON.stringify(data.faqs ?? []),
     JSON.stringify(data.examples ?? []),
+    JSON.stringify(data.integrations ?? {}),
     data.model ?? 'claude-opus-4-8',
     data.currency ?? 'ARS',
     data.timezone ?? 'America/Argentina/Buenos_Aires',
@@ -263,6 +277,7 @@ export function updateAgent(id: string, data: Partial<Agent>): void {
   if (data.knowledge !== undefined) { fields.push('knowledge = ?'); values.push(data.knowledge); }
   if (data.faqs !== undefined) { fields.push('faqs = ?'); values.push(JSON.stringify(data.faqs)); }
   if (data.examples !== undefined) { fields.push('examples = ?'); values.push(JSON.stringify(data.examples)); }
+  if (data.integrations !== undefined) { fields.push('integrations = ?'); values.push(JSON.stringify(data.integrations)); }
 
   if (!fields.length) return;
   values.push(id);
