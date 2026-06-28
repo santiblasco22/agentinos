@@ -517,19 +517,60 @@ export function getConversationList(agentId: string): { phone: string; lastMessa
   });
 }
 
-export function getAgentStats(agentId: string): { messagesToday: number; messagesTotal: number; activeConversations: number } {
+export interface AgentStats {
+  messagesToday: number;
+  messagesTotal: number;
+  activeConversations: number;
+  // Métricas orientadas al negocio (no a la IA).
+  clientesAtendidos: number;
+  turnosAgendados: number;
+  ventasAsistidas: number;
+  productosMasPreguntados: { name: string; count: number }[];
+}
+
+export function getAgentStats(agentId: string): AgentStats {
   const today = new Date().toISOString().slice(0, 10);
-  const convRows = db.prepare('SELECT messages, last_activity FROM conversations WHERE agent_id = ?').all(agentId) as any[];
+  const convRows = db.prepare('SELECT phone, messages, last_activity FROM conversations WHERE agent_id = ?').all(agentId) as any[];
+  const todayTs = new Date(today).getTime() / 1000;
+
+  // Catálogo del agente para detectar qué se pregunta más.
+  const catalog = [
+    ...(db.prepare('SELECT name FROM products WHERE agent_id = ? AND active = 1').all(agentId) as any[]),
+    ...(db.prepare('SELECT name FROM services WHERE agent_id = ? AND active = 1').all(agentId) as any[]),
+  ].map((r) => r.name as string).filter(Boolean);
+
   let messagesToday = 0;
   let messagesTotal = 0;
   let activeConversations = 0;
-  const todayTs = new Date(today).getTime() / 1000;
+  const clientes = new Set<string>();
+  const mentions: Record<string, number> = {};
+
   for (const row of convRows) {
+    // El playground no es un cliente real.
+    if (typeof row.phone === 'string' && row.phone.startsWith('playground:')) continue;
+    clientes.add(row.phone);
+
     const msgs: StoredMessage[] = JSON.parse(row.messages);
     messagesTotal += msgs.length;
-    const todayMsgs = msgs.filter((m) => m.ts / 1000 >= todayTs);
-    messagesToday += todayMsgs.length;
+    messagesToday += msgs.filter((m) => m.ts / 1000 >= todayTs).length;
     if (row.last_activity >= todayTs) activeConversations++;
+
+    const userText = msgs.filter((m) => m.role === 'user').map((m) => m.content.toLowerCase()).join(' ');
+    for (const name of catalog) {
+      if (userText.includes(name.toLowerCase())) mentions[name] = (mentions[name] ?? 0) + 1;
+    }
   }
-  return { messagesToday, messagesTotal, activeConversations };
+
+  const turnosAgendados = (db.prepare("SELECT COUNT(*) AS c FROM bookings WHERE agent_id = ? AND status != 'cancelled'").get(agentId) as any).c as number;
+  const ventasAsistidas = (db.prepare("SELECT COUNT(*) AS c FROM bookings WHERE agent_id = ? AND status IN ('paid','confirmed')").get(agentId) as any).c as number;
+
+  const productosMasPreguntados = Object.entries(mentions)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([name, count]) => ({ name, count }));
+
+  return {
+    messagesToday, messagesTotal, activeConversations,
+    clientesAtendidos: clientes.size, turnosAgendados, ventasAsistidas, productosMasPreguntados,
+  };
 }

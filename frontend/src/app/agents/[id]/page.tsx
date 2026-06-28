@@ -5,6 +5,7 @@ import { getAgent, updateAgent, deleteAgent, getProducts, createProduct, deleteP
 import { isLoggedIn } from '../../../lib/auth';
 import Navbar from '../../../components/Navbar';
 import { Character, CHARACTER_INFO, type CharacterType } from '../../../components/characters';
+import { AI_TIERS, tierFor } from '../../../lib/tiers';
 import { Save, Trash2, Plus, ArrowLeft, ToggleLeft, ToggleRight, Send, RotateCcw, MessageSquare, User, Bot, DollarSign, BookOpen } from 'lucide-react';
 import { toggleAgent } from '../../../lib/api';
 import { toast } from '../../../components/Toaster';
@@ -12,12 +13,6 @@ import { toast } from '../../../components/Toaster';
 const TABS = ['General', 'Entrenamiento', 'Personaje', 'Catálogo', 'Horarios', 'Límites', 'Avanzado', 'Playground'] as const;
 type Tab = typeof TABS[number];
 
-const MODELS = [
-  { id: 'claude-haiku-4-5', label: 'Haiku', price: '$1/1M tokens', color: '#10B981' },
-  { id: 'claude-sonnet-4-6', label: 'Sonnet', price: '$3/1M tokens', color: '#F59E0B' },
-  { id: 'claude-opus-4-8', label: 'Opus', price: '$5/1M tokens', color: '#EF4444' },
-  { id: 'claude-fable-5', label: 'Fable', price: '$10/1M tokens', color: '#7C3AED' },
-];
 const CURRENCIES = ['ARS', 'USD', 'CLP', 'BRL', 'MXN'];
 const TIMEZONES = ['America/Argentina/Buenos_Aires', 'America/Santiago', 'America/Lima', 'America/Bogota', 'America/Mexico_City', 'America/Montevideo'];
 const HOURS = Array.from({ length: 24 }, (_, h) => [`${h.toString().padStart(2,'0')}:00`, `${h.toString().padStart(2,'0')}:30`]).flat();
@@ -151,16 +146,23 @@ export default function AgentPage() {
               <h1 className="text-2xl font-black">{agent.name}</h1>
               <span className={`badge ${agent.isActive ? 'badge-green' : 'badge-red'}`}>{agent.isActive ? '● Activo' : '○ Inactivo'}</span>
             </div>
-            <p className="text-sm mb-4" style={{ color: '#6B7280' }}>{charInfo?.name} • {agent.mode === 'ecommerce' ? 'Tienda' : 'Servicios'} • {agent.model.split('-')[1]}</p>
+            <p className="text-sm mb-4" style={{ color: '#6B7280' }}>{charInfo?.name} • {agent.mode === 'ecommerce' ? 'Tienda' : 'Servicios'} • {tierFor(agent.model).label}</p>
             {stats && (
               <div className="flex flex-wrap gap-4 justify-center md:justify-start text-sm">
-                <div><span style={{ color: '#00D4FF', fontWeight: 700 }}>{stats.messagesToday}</span> <span style={{ color: '#6B7280' }}>msgs hoy</span></div>
-                <div><span style={{ color: '#7C3AED', fontWeight: 700 }}>{stats.messagesTotal}</span> <span style={{ color: '#6B7280' }}>msgs total</span></div>
-                <div><span style={{ color: '#10B981', fontWeight: 700 }}>{stats.activeConversations}</span> <span style={{ color: '#6B7280' }}>chats activos</span></div>
-                <div><span style={{ color: '#F59E0B', fontWeight: 700 }}>{agent.responsesToday}</span> <span style={{ color: '#6B7280' }}>respuestas hoy</span></div>
-                {stats.estimatedCostUSD > 0 && (
-                  <div><span style={{ color: '#EF4444', fontWeight: 700 }}>${stats.estimatedCostUSD.toFixed(2)}</span> <span style={{ color: '#6B7280' }}>costo est.</span></div>
-                )}
+                <div><span style={{ color: '#00D4FF', fontWeight: 700 }}>{stats.clientesAtendidos}</span> <span style={{ color: '#6B7280' }}>clientes atendidos</span></div>
+                {agent.mode === 'services'
+                  ? <div><span style={{ color: '#10B981', fontWeight: 700 }}>{stats.turnosAgendados}</span> <span style={{ color: '#6B7280' }}>turnos agendados</span></div>
+                  : <div><span style={{ color: '#10B981', fontWeight: 700 }}>{stats.ventasAsistidas}</span> <span style={{ color: '#6B7280' }}>ventas asistidas</span></div>}
+                <div><span style={{ color: '#7C3AED', fontWeight: 700 }}>{stats.activeConversations}</span> <span style={{ color: '#6B7280' }}>chats activos</span></div>
+                <div><span style={{ color: '#F59E0B', fontWeight: 700 }}>{Math.round(stats.tiempoAhorradoMin / 60)}h</span> <span style={{ color: '#6B7280' }}>ahorradas</span></div>
+              </div>
+            )}
+            {stats && stats.productosMasPreguntados.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 justify-center md:justify-start">
+                <span className="text-xs" style={{ color: '#6B7280' }}>Más preguntado:</span>
+                {stats.productosMasPreguntados.map((p) => (
+                  <span key={p.name} className="badge badge-blue text-xs">{p.name} · {p.count}</span>
+                ))}
               </div>
             )}
             {agent.maxResponsesPerDay > 0 && (
@@ -541,14 +543,17 @@ export default function AgentPage() {
           <div className="glass-card p-6 flex flex-col gap-5">
             <h3 className="font-bold text-lg">Configuración avanzada</h3>
             <div>
-              <label className="block text-xs font-semibold mb-3" style={{ color: '#6B7280' }}>MODELO DE IA</label>
+              <label className="block text-xs font-semibold mb-3" style={{ color: '#6B7280' }}>NIVEL DE IA</label>
               <div className="flex flex-col gap-2">
-                {MODELS.map(m => (
+                {AI_TIERS.map(m => (
                   <button key={m.id} onClick={() => setForm({ ...form, model: m.id })}
-                    className={`p-4 rounded-xl border text-left transition-all flex items-center justify-between ${form.model === m.id ? 'border-neon' : 'border-white/10 hover:border-white/20'}`}
+                    className={`p-4 rounded-xl border text-left transition-all flex items-center justify-between gap-3 ${form.model === m.id ? 'border-neon' : 'border-white/10 hover:border-white/20'}`}
                     style={{ borderColor: form.model === m.id ? m.color : undefined, background: form.model === m.id ? `${m.color}10` : 'rgba(255,255,255,0.03)' }}>
-                    <span className="font-bold text-sm" style={{ color: m.color }}>{m.label}</span>
-                    <span className="text-xs badge" style={{ background: `${m.color}20`, color: m.color }}>{m.price}</span>
+                    <div>
+                      <div className="font-bold text-sm" style={{ color: m.color }}>{m.label}</div>
+                      <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{m.desc}</div>
+                    </div>
+                    {form.model === m.id && <span className="text-xs badge flex-shrink-0" style={{ background: `${m.color}20`, color: m.color }}>Elegido</span>}
                   </button>
                 ))}
               </div>

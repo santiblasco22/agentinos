@@ -4,7 +4,7 @@ import { createAgent, getAgentById, getAgentsByUser, updateAgent, deleteAgent, t
 
 const VALID_MODES = ['ecommerce', 'services'];
 const VALID_MODELS = ['claude-haiku-4-5', 'claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-8', 'claude-fable-5'];
-const VALID_CHARACTERS = ['gaucho', 'tanguera', 'asador', 'futbolero', 'cientifica', 'rockero', 'matera', 'porteno'];
+const VALID_CHARACTERS = ['gaucho', 'tanguera', 'asador', 'futbolero', 'cientifica', 'rockero', 'matera', 'porteno', 'inmobiliario'];
 
 function validateAgentPayload(body: Record<string, unknown>): string | null {
   if (body.name !== undefined && (typeof body.name !== 'string' || !String(body.name).trim())) return 'El nombre es requerido';

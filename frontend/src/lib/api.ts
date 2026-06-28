@@ -110,7 +110,15 @@ export const getConversations = (agentId: string) =>
 export const getConversation = (agentId: string, phone: string) =>
   request<Message[]>(`/agents/${agentId}/conversations/${encodeURIComponent(phone)}`);
 
-export interface AgentStats { messagesToday: number; messagesTotal: number; responsesToday: number; responsesTotal: number; activeConversations: number; estimatedCostUSD: number; model: string; }
+export interface AgentStats {
+  messagesToday: number; messagesTotal: number;
+  responsesToday: number; responsesTotal: number;
+  activeConversations: number;
+  clientesAtendidos: number; turnosAgendados: number; ventasAsistidas: number;
+  productosMasPreguntados: { name: string; count: number }[];
+  tiempoAhorradoMin: number;
+  estimatedCostUSD: number; model: string;
+}
 export const getAgentStats = (agentId: string) =>
   request<AgentStats>(`/agents/${agentId}/stats`);
 

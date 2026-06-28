@@ -2,7 +2,7 @@ export type AgentMode = 'ecommerce' | 'services';
 
 export type CharacterType =
   | 'gaucho' | 'tanguera' | 'asador' | 'futbolero'
-  | 'cientifica' | 'rockero' | 'matera' | 'porteno';
+  | 'cientifica' | 'rockero' | 'matera' | 'porteno' | 'inmobiliario';
 
 export interface Faq {
   q: string;

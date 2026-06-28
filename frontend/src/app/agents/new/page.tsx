@@ -6,16 +6,11 @@ import { isLoggedIn } from '../../../lib/auth';
 import { useEffect } from 'react';
 import { Character, CHARACTER_INFO, type CharacterType } from '../../../components/characters';
 import Navbar from '../../../components/Navbar';
+import { AI_TIERS } from '../../../lib/tiers';
 import { ShoppingBag, Calendar, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 const CHARACTERS = Object.entries(CHARACTER_INFO) as [CharacterType, typeof CHARACTER_INFO[CharacterType]][];
 const COLORS = ['#00D4FF', '#7C3AED', '#EF4444', '#10B981', '#F59E0B', '#EC4899'];
-const MODELS = [
-  { id: 'claude-haiku-4-5', label: 'Haiku', desc: 'Rápido y barato', price: '$1/1M tokens', color: '#10B981' },
-  { id: 'claude-sonnet-4-6', label: 'Sonnet', desc: 'Balanceado', price: '$3/1M tokens', color: '#F59E0B' },
-  { id: 'claude-opus-4-8', label: 'Opus', desc: 'Más potente', price: '$5/1M tokens', color: '#EF4444' },
-  { id: 'claude-fable-5', label: 'Fable', desc: 'Máxima capacidad', price: '$10/1M tokens', color: '#7C3AED' },
-];
 const CURRENCIES = ['ARS', 'USD', 'CLP', 'BRL', 'MXN'];
 const TIMEZONES = [
   'America/Argentina/Buenos_Aires', 'America/Santiago', 'America/Lima',
@@ -160,17 +155,17 @@ export default function NewAgentPage() {
                   <input className="input-dark" placeholder="APP_USR-..." value={mpToken} onChange={e => setMpToken(e.target.value)} type="password" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold mb-3" style={{ color: '#6B7280' }}>MODELO DE IA</label>
+                  <label className="block text-xs font-semibold mb-3" style={{ color: '#6B7280' }}>NIVEL DE IA</label>
                   <div className="flex flex-col gap-2">
-                    {MODELS.map((m) => (
+                    {AI_TIERS.map((m) => (
                       <button key={m.id} onClick={() => setModel(m.id)}
-                        className={`p-4 rounded-xl border text-left transition-all flex items-center justify-between ${model === m.id ? 'border-neon' : 'border-white/10 hover:border-white/20'}`}
+                        className={`p-4 rounded-xl border text-left transition-all flex items-center justify-between gap-3 ${model === m.id ? 'border-neon' : 'border-white/10 hover:border-white/20'}`}
                         style={{ borderColor: model === m.id ? m.color : undefined, background: model === m.id ? `${m.color}10` : 'rgba(255,255,255,0.03)' }}>
                         <div>
-                          <span className="font-bold text-sm" style={{ color: m.color }}>{m.label}</span>
-                          <span className="text-xs ml-2" style={{ color: '#6B7280' }}>{m.desc}</span>
+                          <div className="font-bold text-sm" style={{ color: m.color }}>{m.label}</div>
+                          <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{m.desc}</div>
                         </div>
-                        <span className="text-xs badge" style={{ background: `${m.color}20`, color: m.color }}>{m.price}</span>
+                        {model === m.id && <span className="text-xs badge flex-shrink-0" style={{ background: `${m.color}20`, color: m.color }}>Elegido</span>}
                       </button>
                     ))}
                   </div>

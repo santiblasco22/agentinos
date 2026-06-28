@@ -37,6 +37,8 @@ router.get('/agents/:id/stats', (req: Request, res: Response) => {
     ...stats,
     responsesToday: agent.responsesToday,
     responsesTotal: agent.responsesTotal,
+    // Estimación simple: cada respuesta automática ahorra ~2 min de atención manual.
+    tiempoAhorradoMin: agent.responsesTotal * 2,
     estimatedCostUSD: Math.round(estimatedCostUSD * 100) / 100,
     model: agent.model,
   });

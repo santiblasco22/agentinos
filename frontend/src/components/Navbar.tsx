@@ -1,7 +1,13 @@
 'use client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { clearToken } from '../lib/auth';
 import { LogOut } from 'lucide-react';
+
+const LINKS = [
+  { href: '/dashboard', label: 'Agentes' },
+  { href: '/integraciones', label: 'Integraciones' },
+  { href: '/planes', label: 'Planes' },
+];
 
 interface NavbarProps {
   userName?: string;
@@ -9,6 +15,7 @@ interface NavbarProps {
 
 export default function Navbar({ userName }: NavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = () => {
     clearToken();
@@ -19,9 +26,23 @@ export default function Navbar({ userName }: NavbarProps) {
 
   return (
     <nav className="glass-card rounded-none border-x-0 border-t-0 sticky top-0 z-50 px-6 py-3 flex items-center justify-between">
-      <span className="text-xl font-black tracking-wider gradient-text cursor-pointer" onClick={() => router.push('/dashboard')}>
-        AGENTINOS
-      </span>
+      <div className="flex items-center gap-6">
+        <span className="text-xl font-black tracking-wider gradient-text cursor-pointer" onClick={() => router.push('/dashboard')}>
+          AGENTINOS
+        </span>
+        <div className="hidden md:flex items-center gap-1">
+          {LINKS.map((l) => {
+            const active = pathname === l.href || (l.href !== '/dashboard' && pathname?.startsWith(l.href));
+            return (
+              <button key={l.href} onClick={() => router.push(l.href)}
+                className="text-sm font-semibold px-3 py-1.5 rounded-lg transition-all"
+                style={{ color: active ? '#00D4FF' : '#9CA3AF', background: active ? 'rgba(0,212,255,0.1)' : 'transparent' }}>
+                {l.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div className="flex items-center gap-3">
         {userName && (
           <div className="flex items-center gap-2">

@@ -55,6 +55,8 @@ test-cli.ts           — REPL para probar agente en terminal
 ```
 app/
   page.tsx                          — Login
+  planes/page.tsx                   — Pricing (Starter/Pro/Business + setup) — mockup, sin pagos
+  integraciones/page.tsx            — Catálogo de integraciones argentinas — showcase, solo MercadoPago real
   dashboard/page.tsx                — Lista de agentes del usuario
   agents/new/page.tsx               — Crear nuevo agente (selector de personaje)
   agents/[id]/page.tsx              — Configuración del agente
@@ -73,8 +75,9 @@ store/
 
 ## Personajes disponibles
 
-8 personajes con personalidad argentina, cada uno con system prompt propio:
-`gaucho`, `tanguera`, `asador`, `futbolero`, `cientifica`, `rockero`, `matera`, `porteno`
+9 personajes con personalidad argentina por rubro:
+`gaucho`, `tanguera`, `asador`, `futbolero`, `cientifica`, `rockero`, `matera`, `porteno`, `inmobiliario`
+Definidos en `frontend/components/characters/index.tsx` (avatar SVG + CHARACTER_INFO) y validados en `backend/routes/agents.ts` (VALID_CHARACTERS) + `backend/types.ts`.
 
 ## Modelos disponibles
 
@@ -83,7 +86,7 @@ store/
 - `claude-sonnet-4-6` — balance calidad/costo
 - `claude-haiku-4-5-20251001` — alto volumen
 
-La lista de modelos está hardcodeada en varios lugares: `backend/routes/agents.ts` (VALID_MODELS), `backend/routes/conversations.ts` (costos), `frontend/agents/new` y `agents/[id]` (dropdowns), `frontend/components/AgentCard.tsx` (badge). Mantenerlos en sync al agregar un modelo.
+La lista de modelos está en: `backend/routes/agents.ts` (VALID_MODELS) y `backend/routes/conversations.ts` (costos). En el **frontend NO se muestran nombres de modelos**: se exponen como niveles "IA Rápida / Avanzada / Premium / Premium+" mapeados en `frontend/lib/tiers.ts` (`AI_TIERS` + `tierFor`). Las dropdowns (`agents/new`, `agents/[id]`) y el badge de `AgentCard` usan ese helper. Al agregar un modelo: tocar los 2 lugares del backend + `lib/tiers.ts`.
 
 ## Variables de entorno backend (`.env`)
 
@@ -105,4 +108,5 @@ DB_PATH=./agentinos.db
 - MercadoPago usa webhooks para confirmar pagos; necesita `PUBLIC_URL` accesible
 - Los avatares SVG están en `frontend/src/components/characters/index.tsx` y también en `Documents/agentinos/avatars/`
 - Auth es JWT stateless, el token va en `Authorization: Bearer <token>`
+- Métricas de negocio (no de IA) en `getAgentStats` (`db/database.ts`): `clientesAtendidos` (phones únicos, excluye playground), `turnosAgendados`/`ventasAsistidas` (de `bookings`), `productosMasPreguntados` (menciones del catálogo en mensajes). `tiempoAhorradoMin` se calcula en el route de stats. Se muestran en el header de `agents/[id]`.
 - "Entrenamiento" del agente (no es fine-tuning): el dueño carga `knowledge` (texto del negocio), `faqs` (`[{q,a}]`) y `examples` (`[{user,assistant}]`) desde el tab **Entrenamiento** en `agents/[id]`. Se guardan como columnas en `agents` y `getSystemPrompt` (`agent/prompts.ts`) los inyecta en el system prompt vía `getTrainingBlock`. Validación de tamaños en `routes/agents.ts`. Se prueba en el tab Playground.

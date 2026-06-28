@@ -4,6 +4,7 @@ import { Settings, MessageCircle, ShoppingBag, Calendar } from 'lucide-react';
 import { Character, CHARACTER_INFO, type CharacterType } from './characters';
 import type { Agent } from '../lib/api';
 import { toggleAgent } from '../lib/api';
+import { tierFor } from '../lib/tiers';
 
 interface AgentCardProps {
   agent: Agent;
@@ -11,19 +12,12 @@ interface AgentCardProps {
   index?: number;
 }
 
-const MODEL_LABELS: Record<string, { label: string; color: string }> = {
-  'claude-haiku-4-5':  { label: 'Haiku', color: '#10B981' },
-  'claude-sonnet-4-6': { label: 'Sonnet', color: '#F59E0B' },
-  'claude-opus-4-8':   { label: 'Opus', color: '#EF4444' },
-  'claude-fable-5':    { label: 'Fable', color: '#7C3AED' },
-};
-
 const STAGGER = ['stagger-1','stagger-2','stagger-3','stagger-4','stagger-5','stagger-6'];
 
 export default function AgentCard({ agent, onToggle, index = 0 }: AgentCardProps) {
   const router = useRouter();
   const charInfo = CHARACTER_INFO[agent.character as CharacterType];
-  const modelInfo = MODEL_LABELS[agent.model] ?? { label: agent.model, color: '#6B7280' };
+  const tier = tierFor(agent.model);
   const pct = agent.maxResponsesPerDay > 0 ? Math.min(100, (agent.responsesToday / agent.maxResponsesPerDay) * 100) : 0;
   const stagger = STAGGER[index % STAGGER.length];
 
@@ -71,8 +65,8 @@ export default function AgentCard({ agent, onToggle, index = 0 }: AgentCardProps
               ? <><ShoppingBag size={10} className="inline mr-1" />Tienda</>
               : <><Calendar size={10} className="inline mr-1" />Servicios</>}
           </span>
-          <span className="badge" style={{ background: `${modelInfo.color}20`, color: modelInfo.color, border: `1px solid ${modelInfo.color}40` }}>
-            {modelInfo.label}
+          <span className="badge" style={{ background: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40` }}>
+            {tier.short}
           </span>
         </div>
 

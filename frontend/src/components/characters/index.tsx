@@ -1,6 +1,6 @@
 'use client';
 
-export type CharacterType = 'gaucho' | 'tanguera' | 'asador' | 'futbolero' | 'cientifica' | 'rockero' | 'matera' | 'porteno';
+export type CharacterType = 'gaucho' | 'tanguera' | 'asador' | 'futbolero' | 'cientifica' | 'rockero' | 'matera' | 'porteno' | 'inmobiliario';
 
 interface CharacterProps {
   size?: number;
@@ -18,6 +18,7 @@ export const CHARACTER_INFO: Record<CharacterType, { name: string; description: 
   rockero:   { name: 'El Rockero',     description: 'Cool y alternativo',       color: '#4C1D95' },
   matera:    { name: 'La Matera',      description: 'Tranquila y tradicional',  color: '#0F766E' },
   porteno:   { name: 'El Porteño',     description: 'Formal y profesional',     color: '#1E3A5F' },
+  inmobiliario:{ name: 'El Inmobiliario', description: 'Propiedades y visitas',  color: '#0EA5E9' },
 };
 
 // Shared base robot SVG builder
@@ -234,6 +235,27 @@ function PortenoCharacter({ size, isActive }: CharacterProps) {
   );
 }
 
+function InmobiliarioCharacter({ size, isActive }: CharacterProps) {
+  return (
+    <RobotBase size={size ?? 100} primaryColor="#0EA5E9" accentColor="#FBBF24" eyeColor="#7DD3FC" isActive={isActive}>
+      {/* Corbata */}
+      <path d="M 47 58 L 53 58 L 51 66 L 49 66 Z" fill="#0C4A6E" />
+      <path d="M 49 66 L 51 66 L 53 80 L 50 84 L 47 80 Z" fill="#0C4A6E" />
+      {/* Solapas del saco */}
+      <path d="M 24 64 L 40 70 L 38 96 L 24 96 Z" fill="#075985" />
+      <path d="M 76 64 L 60 70 L 62 96 L 76 96 Z" fill="#075985" />
+      {/* Casita en el pecho (llavero) */}
+      <rect x="44" y="84" width="12" height="9" rx="1" fill="#FBBF24" />
+      <path d="M 43 84 L 50 78 L 57 84 Z" fill="#F59E0B" />
+      <rect x="48.5" y="87" width="3" height="6" fill="#0C4A6E" />
+      {/* Llave en la mano derecha */}
+      <circle cx="86" cy="92" r="3" fill="none" stroke="#FBBF24" strokeWidth="1.6" />
+      <line x1="86" y1="95" x2="86" y2="101" stroke="#FBBF24" strokeWidth="1.6" strokeLinecap="round" />
+      <line x1="86" y1="99" x2="89" y2="99" stroke="#FBBF24" strokeWidth="1.6" strokeLinecap="round" />
+    </RobotBase>
+  );
+}
+
 const COMPONENTS: Record<CharacterType, React.FC<CharacterProps>> = {
   gaucho: GauchoCharacter,
   tanguera: TangueraCharacter,
@@ -243,6 +265,7 @@ const COMPONENTS: Record<CharacterType, React.FC<CharacterProps>> = {
   rockero: RockeroCharacter,
   matera: MateraCharacter,
   porteno: PortenoCharacter,
+  inmobiliario: InmobiliarioCharacter,
 };
 
 const PNG_CHARACTERS = new Set<CharacterType>();
