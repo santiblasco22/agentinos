@@ -341,9 +341,81 @@ export function deleteService(id: string): void {
 
 // ── Availability ───────────────────────────────────────────
 
-export function getAvailableSlots(agentId: string, date: string, workingHours: string[]): string[] {
-  const booked = (db.prepare("SELECT time FROM bookings WHERE agent_id = ? AND date = ? AND status NOT IN ('cancelled')").all(agentId, date) as any[]).map((r) => r.time as string);
-  return workingHours.filter((h) => !booked.includes(h));
+function toMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+
+// Fecha (YYYY-MM-DD) y hora actual (minutos desde medianoche) en la timezone del agente.
+function nowInTimezone(tz: string): { date: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const p = Object.fromEntries(parts.map((x) => [x.type, x.value])) as Record<string, string>;
+  return { date: `${p.year}-${p.month}-${p.day}`, minutes: Number(p.hour) * 60 + Number(p.minute) };
+}
+
+// Día de la semana (0=dom..6=sáb) de una fecha YYYY-MM-DD, sin ambigüedad de timezone.
+function weekdayOf(date: string): number {
+  return new Date(`${date}T00:00:00Z`).getUTCDay();
+}
+
+// Paso de la grilla (minutos) inferido de los horarios laborales. Default 30.
+function slotStep(workingHours: string[]): number {
+  if (workingHours.length < 2) return 30;
+  const mins = workingHours.map(toMinutes).sort((a, b) => a - b);
+  let step = Infinity;
+  for (let i = 1; i < mins.length; i++) step = Math.min(step, mins[i] - mins[i - 1]);
+  return Number.isFinite(step) && step > 0 ? step : 30;
+}
+
+// Intervalos [inicio, fin) en minutos ya ocupados por reservas no canceladas en una fecha.
+// Usa la duración real de cada servicio reservado (no solo el slot de inicio).
+function getBookedIntervals(agentId: string, date: string, defaultDur: number): { start: number; end: number }[] {
+  const rows = db.prepare(`
+    SELECT b.time AS time, COALESCE(s.duration_minutes, ?) AS dur
+    FROM bookings b LEFT JOIN services s ON s.id = b.service_id
+    WHERE b.agent_id = ? AND b.date = ? AND b.status != 'cancelled'
+  `).all(defaultDur, agentId, date) as any[];
+  return rows.map((r) => { const start = toMinutes(r.time); return { start, end: start + Number(r.dur) }; });
+}
+
+/**
+ * Horarios de INICIO disponibles para una fecha, teniendo en cuenta:
+ *  - días laborales (workingDays): si la fecha no es un día laboral, no hay turnos.
+ *  - pasado: nunca se ofrecen turnos en fechas/horas que ya pasaron (timezone del agente).
+ *  - duración del servicio: el turno debe entrar completo dentro del horario laboral y
+ *    ocupar todos los slots consecutivos que necesita, sin solaparse con otras reservas.
+ */
+export function getAvailableSlots(agent: Agent, date: string, durationMinutes?: number): string[] {
+  const { workingHours, workingDays, timezone } = agent;
+  if (!workingHours.length) return [];
+  if (!workingDays.includes(weekdayOf(date))) return [];
+
+  const step = slotStep(workingHours);
+  const duration = durationMinutes && durationMinutes > 0 ? durationMinutes : step;
+  const slotsNeeded = Math.ceil(duration / step);
+
+  const now = nowInTimezone(timezone);
+  if (date < now.date) return [];
+  const minStart = date === now.date ? now.minutes : -1;
+
+  const slotSet = new Set(workingHours.map(toMinutes));
+  const booked = getBookedIntervals(agent.id, date, step);
+
+  return workingHours.filter((h) => {
+    const start = toMinutes(h);
+    if (start <= minStart) return false;
+    // Todos los slots consecutivos que ocupa el turno deben existir en el horario laboral
+    // (esto descarta turnos que se pasarían del cierre o que caen sobre un corte/almuerzo).
+    for (let k = 0; k < slotsNeeded; k++) {
+      if (!slotSet.has(start + k * step)) return false;
+    }
+    // No debe solaparse con ninguna reserva existente.
+    const end = start + duration;
+    return !booked.some((b) => start < b.end && end > b.start);
+  });
 }
 
 // ── Bookings ───────────────────────────────────────────────

@@ -19,8 +19,8 @@ export const ecommerceTools: Tool[] = [
 export const servicesTools: Tool[] = [
   { name: 'list_services', description: 'Lista servicios disponibles, opcionalmente por categoría.', input_schema: { type: 'object' as const, properties: { category: { type: 'string' } } } },
   { name: 'get_service', description: 'Detalle de un servicio por ID.', input_schema: { type: 'object' as const, properties: { id: { type: 'string' } }, required: ['id'] } },
-  { name: 'check_availability', description: 'Horarios disponibles para una fecha YYYY-MM-DD.', input_schema: { type: 'object' as const, properties: { date: { type: 'string' } }, required: ['date'] } },
-  { name: 'book_appointment', description: 'Reserva un turno. Verificar disponibilidad antes.', input_schema: { type: 'object' as const, properties: { service_id: { type: 'string' }, date: { type: 'string' }, time: { type: 'string' }, client_name: { type: 'string' } }, required: ['service_id', 'date', 'time', 'client_name'] } },
+  { name: 'check_availability', description: 'Horarios de inicio disponibles para una fecha YYYY-MM-DD. Pasá service_id para que tenga en cuenta la duración del servicio. Respeta días/horarios laborales y nunca devuelve turnos pasados.', input_schema: { type: 'object' as const, properties: { date: { type: 'string' }, service_id: { type: 'string' } }, required: ['date'] } },
+  { name: 'book_appointment', description: 'Reserva un turno y bloquea el horario según la duración del servicio. Verificá disponibilidad con check_availability (mismo service_id) antes de reservar.', input_schema: { type: 'object' as const, properties: { service_id: { type: 'string' }, date: { type: 'string' }, time: { type: 'string' }, client_name: { type: 'string' } }, required: ['service_id', 'date', 'time', 'client_name'] } },
   { name: 'view_booking', description: 'Muestra la reserva activa del cliente.', input_schema: { type: 'object' as const, properties: {} } },
   { name: 'cancel_booking', description: 'Cancela la reserva activa.', input_schema: { type: 'object' as const, properties: {} } },
   { name: 'create_payment', description: 'Crea link de pago MercadoPago para la reserva.', input_schema: { type: 'object' as const, properties: {} } },
@@ -109,16 +109,27 @@ export async function executeTool(name: string, input: Record<string, unknown>, 
         return s ? JSON.stringify(s) : 'Servicio no encontrado.';
       }
       case 'check_availability': {
-        const slots = db.getAvailableSlots(aid, input.date as string, agent.workingHours);
-        return slots.length ? JSON.stringify({ date: input.date, availableSlots: slots }) : `No hay turnos disponibles el ${input.date}.`;
+        const date = input.date as string;
+        const svc = input.service_id ? db.getService(aid, input.service_id as string) : undefined;
+        const slots = db.getAvailableSlots(agent, date, svc?.durationMinutes);
+        return slots.length
+          ? JSON.stringify({ date, durationMinutes: svc?.durationMinutes, availableSlots: slots })
+          : `No hay turnos disponibles el ${date} (puede no ser un día laboral o estar completo).`;
       }
       case 'book_appointment': {
         const svc = db.getService(aid, input.service_id as string);
         if (!svc) return 'Servicio no encontrado.';
-        const slots = db.getAvailableSlots(aid, input.date as string, agent.workingHours);
-        if (!slots.includes(input.time as string)) return `El horario ${input.time} del ${input.date} no está disponible.`;
-        const booking = db.createBooking(aid, phone, { serviceId: input.service_id as string, date: input.date as string, time: input.time as string, clientName: input.client_name as string });
-        return JSON.stringify({ success: true, bookingId: booking.id, service: svc.name, date: booking.date, time: booking.time, clientName: booking.clientName });
+        const date = input.date as string;
+        const time = input.time as string;
+        const slots = db.getAvailableSlots(agent, date, svc.durationMinutes);
+        if (!slots.includes(time)) {
+          const alt = slots.slice(0, 6);
+          return alt.length
+            ? `El horario ${time} del ${date} no está disponible para "${svc.name}" (${svc.durationMinutes} min). Horarios libres: ${alt.join(', ')}.`
+            : `No hay turnos disponibles el ${date} para "${svc.name}". Ofrecé otra fecha.`;
+        }
+        const booking = db.createBooking(aid, phone, { serviceId: svc.id, date, time, clientName: input.client_name as string });
+        return JSON.stringify({ success: true, bookingId: booking.id, service: svc.name, durationMinutes: svc.durationMinutes, date: booking.date, time: booking.time, clientName: booking.clientName });
       }
       case 'view_booking': {
         const b = db.getActiveBooking(aid, phone);

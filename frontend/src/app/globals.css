@@ -236,17 +236,22 @@ body {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Input styles */
-.input-dark {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 10px 14px;
-  color: #F0F4FF;
-  width: 100%;
-  outline: none;
-  transition: border-color 0.2s ease;
-  font-size: 14px;
+/* Input styles
+   Va en @layer components para que las utilidades de padding (pl-10/pr-10) que
+   dejan lugar a los íconos puedan sobrescribir el `padding` shorthand de base.
+   Sin la capa, esta regla sin-capa le ganaba a `pl-10` y el ícono pisaba el texto. */
+@layer components {
+  .input-dark {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: #F0F4FF;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s ease;
+    font-size: 14px;
+  }
 }
 
 .input-dark:focus {
