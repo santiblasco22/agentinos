@@ -14,6 +14,27 @@ function validateAgentPayload(body: Record<string, unknown>): string | null {
   if (body.maxTokens !== undefined && (typeof body.maxTokens !== 'number' || body.maxTokens < 256 || body.maxTokens > 4096)) return 'maxTokens debe ser entre 256 y 4096';
   if (body.maxResponsesPerDay !== undefined && (typeof body.maxResponsesPerDay !== 'number' || body.maxResponsesPerDay < 0)) return 'maxResponsesPerDay inválido';
   if (body.maxResponsesTotal !== undefined && (typeof body.maxResponsesTotal !== 'number' || body.maxResponsesTotal < 0)) return 'maxResponsesTotal inválido';
+
+  if (body.knowledge !== undefined) {
+    if (typeof body.knowledge !== 'string') return 'El conocimiento debe ser texto';
+    if (body.knowledge.length > 8000) return 'El conocimiento no puede superar los 8000 caracteres';
+  }
+  if (body.faqs !== undefined) {
+    if (!Array.isArray(body.faqs)) return 'Las FAQs son inválidas';
+    if (body.faqs.length > 50) return 'Máximo 50 preguntas frecuentes';
+    for (const f of body.faqs as any[]) {
+      if (!f || typeof f.q !== 'string' || typeof f.a !== 'string') return 'Cada FAQ necesita pregunta y respuesta';
+      if (f.q.length > 300 || f.a.length > 1000) return 'Pregunta (máx 300) o respuesta (máx 1000) demasiado larga';
+    }
+  }
+  if (body.examples !== undefined) {
+    if (!Array.isArray(body.examples)) return 'Los ejemplos son inválidos';
+    if (body.examples.length > 30) return 'Máximo 30 ejemplos';
+    for (const e of body.examples as any[]) {
+      if (!e || typeof e.user !== 'string' || typeof e.assistant !== 'string') return 'Cada ejemplo necesita mensaje del cliente y respuesta';
+      if (e.user.length > 500 || e.assistant.length > 1000) return 'Ejemplo demasiado largo (cliente máx 500, respuesta máx 1000)';
+    }
+  }
   return null;
 }
 

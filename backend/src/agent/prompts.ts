@@ -2,6 +2,30 @@ import type { Agent } from '../types';
 
 const DAY_NAMES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
+// Bloque de "entrenamiento" cargado por el dueño desde la página:
+// conocimiento del negocio, preguntas frecuentes y ejemplos de conversación.
+function getTrainingBlock(agent: Agent): string {
+  const parts: string[] = [];
+
+  if (agent.knowledge?.trim()) {
+    parts.push(`Conocimiento del negocio (usá esta información para responder; no inventes datos que no estén acá):\n${agent.knowledge.trim()}`);
+  }
+
+  const faqs = (agent.faqs ?? []).filter((f) => f.q?.trim() && f.a?.trim());
+  if (faqs.length) {
+    const list = faqs.map((f) => `P: ${f.q.trim()}\nR: ${f.a.trim()}`).join('\n\n');
+    parts.push(`Preguntas frecuentes:\n${list}`);
+  }
+
+  const examples = (agent.examples ?? []).filter((e) => e.user?.trim() && e.assistant?.trim());
+  if (examples.length) {
+    const list = examples.map((e) => `Cliente: ${e.user.trim()}\nVos: ${e.assistant.trim()}`).join('\n\n');
+    parts.push(`Ejemplos de cómo respondés (seguí este estilo, no los copies textual):\n${list}`);
+  }
+
+  return parts.length ? `\n\n${parts.join('\n\n')}` : '';
+}
+
 export function getSystemPrompt(agent: Agent): string {
   const days = agent.workingDays.map((d) => DAY_NAMES[d]).join(', ');
   const hours = agent.workingHours.length
@@ -17,7 +41,7 @@ export function getSystemPrompt(agent: Agent): string {
 Respondé siempre en español, de forma natural y concisa (mensajes cortos, ideales para WhatsApp).
 Usá emojis con moderación. Precios en ${agent.currency}.
 Fecha y hora actual: ${ahora} (zona ${agent.timezone}). Usala para interpretar "hoy", "mañana", "el viernes", etc.
-${agent.customPrompt ? `\nInstrucciones específicas:\n${agent.customPrompt}` : ''}`;
+${agent.customPrompt ? `\nInstrucciones específicas:\n${agent.customPrompt}` : ''}${getTrainingBlock(agent)}`;
 
   if (agent.mode === 'ecommerce') {
     return `${base}

@@ -100,6 +100,11 @@ function ensureColumn(table: string, column: string, definition: string): void {
 ensureColumn('users', 'company', 'TEXT');
 ensureColumn('users', 'phone', 'TEXT');
 
+// Entrenamiento del agente: conocimiento del negocio, FAQs y ejemplos de conversación.
+ensureColumn('agents', 'knowledge', "TEXT NOT NULL DEFAULT ''");
+ensureColumn('agents', 'faqs', "TEXT NOT NULL DEFAULT '[]'");
+ensureColumn('agents', 'examples', "TEXT NOT NULL DEFAULT '[]'");
+
 // ── Users ──────────────────────────────────────────────────
 
 interface NewUser {
@@ -135,6 +140,17 @@ export function countUsers(): number {
 
 // ── Agents ─────────────────────────────────────────────────
 
+// Parsea JSON de la DB con fallback seguro (filas viejas o datos corruptos).
+function safeJsonArray<T>(raw: unknown): T[] {
+  if (typeof raw !== 'string' || !raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
 function rowToAgent(row: any): Agent {
   return {
     id: row.id,
@@ -145,6 +161,9 @@ function rowToAgent(row: any): Agent {
     whatsappNumber: row.whatsapp_number ?? '',
     mercadopagoToken: row.mercadopago_token,
     customPrompt: row.custom_prompt,
+    knowledge: row.knowledge ?? '',
+    faqs: safeJsonArray(row.faqs),
+    examples: safeJsonArray(row.examples),
     model: row.model,
     currency: row.currency,
     timezone: row.timezone,
@@ -176,9 +195,9 @@ export function createAgent(userId: string, data: Partial<Agent>): Agent {
   const id = crypto.randomUUID();
   db.prepare(`
     INSERT INTO agents (id, user_id, name, character, mode, whatsapp_number, mercadopago_token,
-      custom_prompt, model, currency, timezone, working_hours, working_days,
+      custom_prompt, knowledge, faqs, examples, model, currency, timezone, working_hours, working_days,
       max_tokens, max_responses_per_day, max_responses_total, is_active, color)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id, userId,
     data.name ?? 'Nuevo Agente',
@@ -187,6 +206,9 @@ export function createAgent(userId: string, data: Partial<Agent>): Agent {
     normalizeWhatsapp(data.whatsappNumber),
     data.mercadopagoToken ?? '',
     data.customPrompt ?? '',
+    data.knowledge ?? '',
+    JSON.stringify(data.faqs ?? []),
+    JSON.stringify(data.examples ?? []),
     data.model ?? 'claude-opus-4-8',
     data.currency ?? 'ARS',
     data.timezone ?? 'America/Argentina/Buenos_Aires',
@@ -238,6 +260,9 @@ export function updateAgent(id: string, data: Partial<Agent>): void {
   if (data.isActive !== undefined) { fields.push('is_active = ?'); values.push(data.isActive ? 1 : 0); }
   if (data.workingHours !== undefined) { fields.push('working_hours = ?'); values.push(JSON.stringify(data.workingHours)); }
   if (data.workingDays !== undefined) { fields.push('working_days = ?'); values.push(JSON.stringify(data.workingDays)); }
+  if (data.knowledge !== undefined) { fields.push('knowledge = ?'); values.push(data.knowledge); }
+  if (data.faqs !== undefined) { fields.push('faqs = ?'); values.push(JSON.stringify(data.faqs)); }
+  if (data.examples !== undefined) { fields.push('examples = ?'); values.push(JSON.stringify(data.examples)); }
 
   if (!fields.length) return;
   values.push(id);

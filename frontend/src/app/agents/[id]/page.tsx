@@ -5,11 +5,11 @@ import { getAgent, updateAgent, deleteAgent, getProducts, createProduct, deleteP
 import { isLoggedIn } from '../../../lib/auth';
 import Navbar from '../../../components/Navbar';
 import { Character, CHARACTER_INFO, type CharacterType } from '../../../components/characters';
-import { Save, Trash2, Plus, ArrowLeft, ToggleLeft, ToggleRight, Send, RotateCcw, MessageSquare, User, Bot, DollarSign } from 'lucide-react';
+import { Save, Trash2, Plus, ArrowLeft, ToggleLeft, ToggleRight, Send, RotateCcw, MessageSquare, User, Bot, DollarSign, BookOpen } from 'lucide-react';
 import { toggleAgent } from '../../../lib/api';
 import { toast } from '../../../components/Toaster';
 
-const TABS = ['General', 'Personaje', 'Catálogo', 'Horarios', 'Límites', 'Avanzado', 'Playground'] as const;
+const TABS = ['General', 'Entrenamiento', 'Personaje', 'Catálogo', 'Horarios', 'Límites', 'Avanzado', 'Playground'] as const;
 type Tab = typeof TABS[number];
 
 const MODELS = [
@@ -184,7 +184,7 @@ export default function AgentPage() {
           {TABS.map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-3 text-sm font-semibold transition-all whitespace-nowrap ${tab === t ? 'tab-active' : 'tab-inactive'}`}>
-              {t === 'Playground' ? '▶ Playground' : t}
+              {t === 'Playground' ? '▶ Playground' : t === 'Entrenamiento' ? '🎓 Entrenamiento' : t}
             </button>
           ))}
         </div>
@@ -211,6 +211,97 @@ export default function AgentPage() {
             </div>
             <button onClick={() => save(form)} disabled={saving} className="btn-neon flex items-center gap-2 self-start mt-2">
               <Save size={16} /> {saving ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+          </div>
+        )}
+
+        {/* ENTRENAMIENTO */}
+        {tab === 'Entrenamiento' && (
+          <div className="glass-card p-6 flex flex-col gap-6">
+            <div className="flex items-center gap-2">
+              <BookOpen size={18} color="#00D4FF" />
+              <h3 className="font-bold text-lg">Entrenar al agente</h3>
+            </div>
+            <p className="text-sm -mt-3" style={{ color: '#6B7280' }}>
+              Enseñale a tu agente sobre tu negocio. Cuanto más completo, mejor responde y menos inventa. Probá los cambios en el Playground antes de activarlo.
+            </p>
+
+            {/* Conocimiento */}
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#6B7280' }}>CONOCIMIENTO DEL NEGOCIO</label>
+              <p className="text-xs mb-2" style={{ color: '#6B7280' }}>Ubicación, formas de pago, políticas, datos clave. El agente responde a partir de esto.</p>
+              <textarea
+                className="input-dark resize-none"
+                rows={7}
+                maxLength={8000}
+                value={form.knowledge ?? ''}
+                onChange={e => setForm({ ...form, knowledge: e.target.value })}
+                placeholder={'Ej:\n- Estamos en Av. Corrientes 1234, CABA.\n- Aceptamos efectivo, débito y MercadoPago.\n- Las señas no se reintegran si cancelás con menos de 24hs.\n- Atendemos sin turno solo de lunes a viernes a la mañana.'}
+              />
+              <div className="text-xs text-right mt-1" style={{ color: '#6B7280' }}>{(form.knowledge ?? '').length}/8000</div>
+            </div>
+
+            {/* FAQs */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold" style={{ color: '#6B7280' }}>PREGUNTAS FRECUENTES</label>
+                <span className="text-xs" style={{ color: '#6B7280' }}>{(form.faqs ?? []).length}/50</span>
+              </div>
+              <div className="flex flex-col gap-3">
+                {(form.faqs ?? []).map((f, i) => (
+                  <div key={i} className="p-3 rounded-xl border flex flex-col gap-2" style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}>
+                    <div className="flex items-center gap-2">
+                      <input className="input-dark flex-1" placeholder="Pregunta del cliente" maxLength={300}
+                        value={f.q} onChange={e => setForm({ ...form, faqs: (form.faqs ?? []).map((x, idx) => idx === i ? { ...x, q: e.target.value } : x) })} />
+                      <button onClick={() => setForm({ ...form, faqs: (form.faqs ?? []).filter((_, idx) => idx !== i) })} style={{ color: '#EF4444' }}><Trash2 size={15} /></button>
+                    </div>
+                    <textarea className="input-dark resize-none" rows={2} placeholder="Respuesta" maxLength={1000}
+                      value={f.a} onChange={e => setForm({ ...form, faqs: (form.faqs ?? []).map((x, idx) => idx === i ? { ...x, a: e.target.value } : x) })} />
+                  </div>
+                ))}
+                {(form.faqs ?? []).length === 0 && <p className="text-xs py-2" style={{ color: '#6B7280' }}>Sin preguntas frecuentes todavía.</p>}
+              </div>
+              {(form.faqs ?? []).length < 50 && (
+                <button onClick={() => setForm({ ...form, faqs: [...(form.faqs ?? []), { q: '', a: '' }] })} className="flex items-center gap-1.5 text-sm mt-2" style={{ color: '#00D4FF' }}>
+                  <Plus size={15} /> Agregar pregunta
+                </button>
+              )}
+            </div>
+
+            {/* Ejemplos */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold" style={{ color: '#6B7280' }}>EJEMPLOS DE CONVERSACIÓN</label>
+                <span className="text-xs" style={{ color: '#6B7280' }}>{(form.examples ?? []).length}/30</span>
+              </div>
+              <p className="text-xs mb-2" style={{ color: '#6B7280' }}>Mostrale cómo querés que responda en casos típicos. Guía el estilo, no lo copia textual.</p>
+              <div className="flex flex-col gap-3">
+                {(form.examples ?? []).map((ex, i) => (
+                  <div key={i} className="p-3 rounded-xl border flex flex-col gap-2" style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}>
+                    <div className="flex items-center gap-2">
+                      <input className="input-dark flex-1" placeholder="Mensaje del cliente" maxLength={500}
+                        value={ex.user} onChange={e => setForm({ ...form, examples: (form.examples ?? []).map((x, idx) => idx === i ? { ...x, user: e.target.value } : x) })} />
+                      <button onClick={() => setForm({ ...form, examples: (form.examples ?? []).filter((_, idx) => idx !== i) })} style={{ color: '#EF4444' }}><Trash2 size={15} /></button>
+                    </div>
+                    <textarea className="input-dark resize-none" rows={2} placeholder="Cómo debería responder el agente" maxLength={1000}
+                      value={ex.assistant} onChange={e => setForm({ ...form, examples: (form.examples ?? []).map((x, idx) => idx === i ? { ...x, assistant: e.target.value } : x) })} />
+                  </div>
+                ))}
+                {(form.examples ?? []).length === 0 && <p className="text-xs py-2" style={{ color: '#6B7280' }}>Sin ejemplos todavía.</p>}
+              </div>
+              {(form.examples ?? []).length < 30 && (
+                <button onClick={() => setForm({ ...form, examples: [...(form.examples ?? []), { user: '', assistant: '' }] })} className="flex items-center gap-1.5 text-sm mt-2" style={{ color: '#00D4FF' }}>
+                  <Plus size={15} /> Agregar ejemplo
+                </button>
+              )}
+            </div>
+
+            <button onClick={() => save({
+              knowledge: form.knowledge,
+              faqs: (form.faqs ?? []).filter(f => f.q.trim() && f.a.trim()),
+              examples: (form.examples ?? []).filter(e => e.user.trim() && e.assistant.trim()),
+            })} disabled={saving} className="btn-neon flex items-center gap-2 self-start">
+              <Save size={16} /> {saving ? 'Guardando...' : 'Guardar entrenamiento'}
             </button>
           </div>
         )}

@@ -4,6 +4,16 @@ export type CharacterType =
   | 'gaucho' | 'tanguera' | 'asador' | 'futbolero'
   | 'cientifica' | 'rockero' | 'matera' | 'porteno';
 
+export interface Faq {
+  q: string;
+  a: string;
+}
+
+export interface Example {
+  user: string;
+  assistant: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -21,6 +31,9 @@ export interface Agent {
   whatsappNumber: string;
   mercadopagoToken: string;
   customPrompt: string;
+  knowledge: string;
+  faqs: Faq[];
+  examples: Example[];
   model: string;
   currency: string;
   timezone: string;

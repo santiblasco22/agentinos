@@ -42,6 +42,9 @@ export const checkSetupRequired = () =>
   request<{ setupRequired: boolean }>('/auth/setup-required');
 
 // Agents
+export interface Faq { q: string; a: string; }
+export interface Example { user: string; assistant: string; }
+
 export interface Agent {
   id: string;
   userId: string;
@@ -51,6 +54,9 @@ export interface Agent {
   whatsappNumber: string;
   mercadopagoToken: string;
   customPrompt: string;
+  knowledge: string;
+  faqs: Faq[];
+  examples: Example[];
   model: string;
   currency: string;
   timezone: string;
