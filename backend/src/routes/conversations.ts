@@ -23,6 +23,7 @@ const MODEL_PRICE_PER_MILLION: Record<string, number> = {
   'claude-haiku-4-5-20251001': 1,
   'claude-sonnet-4-6': 3,
   'claude-opus-4-8': 5,
+  'claude-fable-5': 10,
 };
 
 router.get('/agents/:id/stats', (req: Request, res: Response) => {

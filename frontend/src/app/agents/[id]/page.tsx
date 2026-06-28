@@ -16,6 +16,7 @@ const MODELS = [
   { id: 'claude-haiku-4-5', label: 'Haiku', price: '$1/1M tokens', color: '#10B981' },
   { id: 'claude-sonnet-4-6', label: 'Sonnet', price: '$3/1M tokens', color: '#F59E0B' },
   { id: 'claude-opus-4-8', label: 'Opus', price: '$5/1M tokens', color: '#EF4444' },
+  { id: 'claude-fable-5', label: 'Fable', price: '$10/1M tokens', color: '#7C3AED' },
 ];
 const CURRENCIES = ['ARS', 'USD', 'CLP', 'BRL', 'MXN'];
 const TIMEZONES = ['America/Argentina/Buenos_Aires', 'America/Santiago', 'America/Lima', 'America/Bogota', 'America/Mexico_City', 'America/Montevideo'];

@@ -78,9 +78,12 @@ store/
 
 ## Modelos disponibles
 
+- `claude-fable-5` — máxima capacidad (premium; clasificadores pueden devolver `stop_reason: 'refusal'`)
 - `claude-opus-4-8` — calidad máxima (default)
 - `claude-sonnet-4-6` — balance calidad/costo
 - `claude-haiku-4-5-20251001` — alto volumen
+
+La lista de modelos está hardcodeada en varios lugares: `backend/routes/agents.ts` (VALID_MODELS), `backend/routes/conversations.ts` (costos), `frontend/agents/new` y `agents/[id]` (dropdowns), `frontend/components/AgentCard.tsx` (badge). Mantenerlos en sync al agregar un modelo.
 
 ## Variables de entorno backend (`.env`)
 

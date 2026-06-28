@@ -15,6 +15,7 @@ const MODEL_LABELS: Record<string, { label: string; color: string }> = {
   'claude-haiku-4-5':  { label: 'Haiku', color: '#10B981' },
   'claude-sonnet-4-6': { label: 'Sonnet', color: '#F59E0B' },
   'claude-opus-4-8':   { label: 'Opus', color: '#EF4444' },
+  'claude-fable-5':    { label: 'Fable', color: '#7C3AED' },
 };
 
 const STAGGER = ['stagger-1','stagger-2','stagger-3','stagger-4','stagger-5','stagger-6'];

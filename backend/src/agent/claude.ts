@@ -32,6 +32,13 @@ export async function handleMessage(agent: Agent, phone: string, userMessage: st
       return text;
     }
 
+    // Los clasificadores de seguridad (p. ej. en Fable 5) pueden declinar el pedido.
+    if (response.stop_reason === 'refusal') {
+      const text = 'Perdón, no puedo ayudarte con eso. ¿Querés que te ayude con otra cosa?';
+      addMessage(agent.id, phone, 'assistant', text);
+      return text;
+    }
+
     if (response.stop_reason === 'tool_use') {
       messages.push({ role: 'assistant', content: response.content });
       const toolResults: Anthropic.ToolResultBlockParam[] = [];
