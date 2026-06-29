@@ -11,8 +11,8 @@ export interface AiTier {
 }
 
 export const AI_TIERS: AiTier[] = [
-  { id: 'claude-haiku-4-5',  label: 'IA Rápida',    short: 'Rápida',    desc: 'Respuestas al toque. Ideal para alto volumen de consultas.', color: '#10B981' },
-  { id: 'claude-sonnet-4-6', label: 'IA Avanzada',  short: 'Avanzada',  desc: 'Mejor comprensión y trato. El equilibrio justo.',            color: '#F59E0B' },
+  { id: 'glm-4-flash',       label: 'IA Rápida',    short: 'Rápida',    desc: 'Respuestas al toque. Ideal para alto volumen de consultas.', color: '#10B981' },
+  { id: 'glm-4.6',           label: 'IA Avanzada',  short: 'Avanzada',  desc: 'Mejor comprensión y trato. El equilibrio justo.',            color: '#F59E0B' },
   { id: 'claude-opus-4-8',   label: 'IA Premium',   short: 'Premium',   desc: 'Máxima calidad de conversación para tus mejores clientes.',  color: '#EF4444' },
   { id: 'claude-fable-5',    label: 'IA Premium+',  short: 'Premium+',  desc: 'Lo más potente, para casos exigentes.',                      color: '#7C3AED' },
 ];
