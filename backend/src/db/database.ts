@@ -223,7 +223,7 @@ export function createAgent(userId: string, data: Partial<Agent>): Agent {
     JSON.stringify(data.faqs ?? []),
     JSON.stringify(data.examples ?? []),
     JSON.stringify(data.integrations ?? {}),
-    data.model ?? 'claude-opus-4-8',
+    data.model ?? 'glm-4.6',
     data.currency ?? 'ARS',
     data.timezone ?? 'America/Argentina/Buenos_Aires',
     JSON.stringify(data.workingHours ?? ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30']),

@@ -32,7 +32,7 @@ export default function NewAgentPage() {
   // Step 2
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [mpToken, setMpToken] = useState('');
-  const [model, setModel] = useState('claude-opus-4-8');
+  const [model, setModel] = useState(AI_TIERS[1].id); // IA Avanzada por defecto
 
   // Step 3
   const [maxPerDay, setMaxPerDay] = useState(0);

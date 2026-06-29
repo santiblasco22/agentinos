@@ -1,29 +1,27 @@
-import Anthropic from '@anthropic-ai/sdk';
 import * as db from '../db/database';
 import { createPaymentLink } from '../services/mercadopago';
 import type { Agent } from '../types';
+import type { LLMTool } from './llm/types';
 
-type Tool = Anthropic.Tool;
-
-export const ecommerceTools: Tool[] = [
-  { name: 'list_products', description: 'Lista productos disponibles, opcionalmente por categoría.', input_schema: { type: 'object' as const, properties: { category: { type: 'string' } } } },
-  { name: 'search_products', description: 'Busca productos por texto.', input_schema: { type: 'object' as const, properties: { query: { type: 'string' } }, required: ['query'] } },
-  { name: 'get_product', description: 'Detalle de un producto por ID.', input_schema: { type: 'object' as const, properties: { id: { type: 'string' } }, required: ['id'] } },
-  { name: 'add_to_cart', description: 'Agrega un producto al carrito.', input_schema: { type: 'object' as const, properties: { product_id: { type: 'string' }, quantity: { type: 'number' } }, required: ['product_id', 'quantity'] } },
-  { name: 'remove_from_cart', description: 'Elimina un producto del carrito.', input_schema: { type: 'object' as const, properties: { product_id: { type: 'string' } }, required: ['product_id'] } },
-  { name: 'view_cart', description: 'Muestra el carrito actual con totales.', input_schema: { type: 'object' as const, properties: {} } },
-  { name: 'clear_cart', description: 'Vacía el carrito.', input_schema: { type: 'object' as const, properties: {} } },
-  { name: 'create_payment', description: 'Crea link de pago MercadoPago. Solo cuando el cliente confirme la compra.', input_schema: { type: 'object' as const, properties: {} } },
+export const ecommerceTools: LLMTool[] = [
+  { name: 'list_products', description: 'Lista productos disponibles, opcionalmente por categoría.', inputSchema: { type: 'object', properties: { category: { type: 'string' } } } },
+  { name: 'search_products', description: 'Busca productos por texto.', inputSchema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } },
+  { name: 'get_product', description: 'Detalle de un producto por ID.', inputSchema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] } },
+  { name: 'add_to_cart', description: 'Agrega un producto al carrito.', inputSchema: { type: 'object', properties: { product_id: { type: 'string' }, quantity: { type: 'number' } }, required: ['product_id', 'quantity'] } },
+  { name: 'remove_from_cart', description: 'Elimina un producto del carrito.', inputSchema: { type: 'object', properties: { product_id: { type: 'string' } }, required: ['product_id'] } },
+  { name: 'view_cart', description: 'Muestra el carrito actual con totales.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'clear_cart', description: 'Vacía el carrito.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'create_payment', description: 'Crea link de pago MercadoPago. Solo cuando el cliente confirme la compra.', inputSchema: { type: 'object', properties: {} } },
 ];
 
-export const servicesTools: Tool[] = [
-  { name: 'list_services', description: 'Lista servicios disponibles, opcionalmente por categoría.', input_schema: { type: 'object' as const, properties: { category: { type: 'string' } } } },
-  { name: 'get_service', description: 'Detalle de un servicio por ID.', input_schema: { type: 'object' as const, properties: { id: { type: 'string' } }, required: ['id'] } },
-  { name: 'check_availability', description: 'Horarios de inicio disponibles para una fecha YYYY-MM-DD. Pasá service_id para que tenga en cuenta la duración del servicio. Respeta días/horarios laborales y nunca devuelve turnos pasados.', input_schema: { type: 'object' as const, properties: { date: { type: 'string' }, service_id: { type: 'string' } }, required: ['date'] } },
-  { name: 'book_appointment', description: 'Reserva un turno y bloquea el horario según la duración del servicio. Verificá disponibilidad con check_availability (mismo service_id) antes de reservar.', input_schema: { type: 'object' as const, properties: { service_id: { type: 'string' }, date: { type: 'string' }, time: { type: 'string' }, client_name: { type: 'string' } }, required: ['service_id', 'date', 'time', 'client_name'] } },
-  { name: 'view_booking', description: 'Muestra la reserva activa del cliente.', input_schema: { type: 'object' as const, properties: {} } },
-  { name: 'cancel_booking', description: 'Cancela la reserva activa.', input_schema: { type: 'object' as const, properties: {} } },
-  { name: 'create_payment', description: 'Crea link de pago MercadoPago para la reserva.', input_schema: { type: 'object' as const, properties: {} } },
+export const servicesTools: LLMTool[] = [
+  { name: 'list_services', description: 'Lista servicios disponibles, opcionalmente por categoría.', inputSchema: { type: 'object', properties: { category: { type: 'string' } } } },
+  { name: 'get_service', description: 'Detalle de un servicio por ID.', inputSchema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] } },
+  { name: 'check_availability', description: 'Horarios de inicio disponibles para una fecha YYYY-MM-DD. Pasá service_id para que tenga en cuenta la duración del servicio. Respeta días/horarios laborales y nunca devuelve turnos pasados.', inputSchema: { type: 'object', properties: { date: { type: 'string' }, service_id: { type: 'string' } }, required: ['date'] } },
+  { name: 'book_appointment', description: 'Reserva un turno y bloquea el horario según la duración del servicio. Verificá disponibilidad con check_availability (mismo service_id) antes de reservar.', inputSchema: { type: 'object', properties: { service_id: { type: 'string' }, date: { type: 'string' }, time: { type: 'string' }, client_name: { type: 'string' } }, required: ['service_id', 'date', 'time', 'client_name'] } },
+  { name: 'view_booking', description: 'Muestra la reserva activa del cliente.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'cancel_booking', description: 'Cancela la reserva activa.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'create_payment', description: 'Crea link de pago MercadoPago para la reserva.', inputSchema: { type: 'object', properties: {} } },
 ];
 
 function fmt(amount: number, currency: string): string {

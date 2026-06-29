@@ -19,6 +19,8 @@ router.get('/agents/:id/conversations/:phone', (req: Request, res: Response) => 
 });
 
 const MODEL_PRICE_PER_MILLION: Record<string, number> = {
+  'glm-4-flash': 0.1,
+  'glm-4.6': 0.6,
   'claude-haiku-4-5': 1,
   'claude-haiku-4-5-20251001': 1,
   'claude-sonnet-4-6': 3,

@@ -1,62 +1,63 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { getSystemPrompt } from './prompts';
 import { ecommerceTools, servicesTools, executeTool } from './tools';
 import { getMessages, addMessage } from '../db/database';
+import { getProvider, type LLMTurn } from './llm';
 import type { Agent } from '../types';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MAX_ROUNDS = 10;
 
 export async function handleMessage(agent: Agent, phone: string, userMessage: string): Promise<string> {
   const tools = agent.mode === 'ecommerce' ? ecommerceTools : servicesTools;
   const system = getSystemPrompt(agent);
+  const provider = getProvider(agent.model);
 
   addMessage(agent.id, phone, 'user', userMessage);
   const history = getMessages(agent.id, phone);
 
-  const messages: Anthropic.MessageParam[] = history.map((m) => ({ role: m.role, content: m.content }));
+  // El historial persistido es texto plano (user/assistant). Los turnos de
+  // tool-use/tool-result viven solo dentro de este loop.
+  const messages: LLMTurn[] = history.map((m): LLMTurn =>
+    m.role === 'user'
+      ? { role: 'user', content: m.content }
+      : { role: 'assistant', content: m.content }
+  );
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const response = await anthropic.messages.create({
+    const response = await provider.generate({
       model: agent.model,
-      max_tokens: agent.maxTokens,
+      maxTokens: agent.maxTokens,
       system,
       tools,
       messages,
     });
 
-    if (response.stop_reason === 'end_turn') {
-      const textBlock = response.content.find((b) => b.type === 'text');
-      const text = textBlock?.text ?? '(sin respuesta)';
-      addMessage(agent.id, phone, 'assistant', text);
-      return text;
-    }
-
-    // Los clasificadores de seguridad (p. ej. en Fable 5) pueden declinar el pedido.
-    if (response.stop_reason === 'refusal') {
+    if (response.stopReason === 'refusal') {
       const text = 'Perdón, no puedo ayudarte con eso. ¿Querés que te ayude con otra cosa?';
       addMessage(agent.id, phone, 'assistant', text);
       return text;
     }
 
-    if (response.stop_reason === 'tool_use') {
-      messages.push({ role: 'assistant', content: response.content });
-      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+    if (response.stopReason === 'tool_use' && response.toolCalls.length) {
+      // Replay del turno del asistente con sus llamadas a tools.
+      messages.push({ role: 'assistant', content: response.text, toolCalls: response.toolCalls });
 
-      for (const block of response.content) {
-        if (block.type !== 'tool_use') continue;
-        let result = await executeTool(block.name, block.input as Record<string, unknown>, agent, phone);
+      const results = [];
+      for (const call of response.toolCalls) {
+        let result = await executeTool(call.name, call.input, agent, phone);
         if (result.startsWith('PAYMENT_URL:')) {
           result = `Link de pago generado: ${result.replace('PAYMENT_URL:', '')}`;
         }
-        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: result });
+        results.push({ id: call.id, name: call.name, content: result });
       }
 
-      messages.push({ role: 'user', content: toolResults });
+      messages.push({ role: 'tool', results });
       continue;
     }
 
-    break;
+    // end_turn (u otro): respuesta final.
+    const text = response.text.trim() || '(sin respuesta)';
+    addMessage(agent.id, phone, 'assistant', text);
+    return text;
   }
 
   const fallback = 'Ocurrió un error. Por favor intentá de nuevo.';
