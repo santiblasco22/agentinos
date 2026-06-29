@@ -99,6 +99,7 @@ function ensureColumn(table: string, column: string, definition: string): void {
 
 ensureColumn('users', 'company', 'TEXT');
 ensureColumn('users', 'phone', 'TEXT');
+ensureColumn('conversations', 'summary', "TEXT NOT NULL DEFAULT ''");
 
 // Entrenamiento del agente: conocimiento del negocio, FAQs y ejemplos de conversación.
 ensureColumn('agents', 'knowledge', "TEXT NOT NULL DEFAULT ''");
@@ -486,7 +487,7 @@ export function cancelBooking(id: string): void {
 
 // ── Conversations ──────────────────────────────────────────
 
-type StoredMessage = { role: 'user' | 'assistant'; content: string; ts: number };
+export type StoredMessage = { role: 'user' | 'assistant'; content: string; ts: number };
 const MAX_HISTORY = 50;
 
 export function getMessages(agentId: string, phone: string): StoredMessage[] {
@@ -504,6 +505,22 @@ export function addMessage(agentId: string, phone: string, role: 'user' | 'assis
     VALUES (?, ?, ?, ?, unixepoch())
     ON CONFLICT(agent_id, phone) DO UPDATE SET messages = excluded.messages, last_activity = excluded.last_activity
   `).run(agentId, phone, JSON.stringify(trimmed), JSON.stringify(cart));
+}
+
+// Resumen acumulado de la conversación (memoria de lo más viejo, ya compactado).
+export function getConversationSummary(agentId: string, phone: string): string {
+  const row = db.prepare('SELECT summary FROM conversations WHERE agent_id = ? AND phone = ?').get(agentId, phone) as any;
+  return row?.summary ?? '';
+}
+
+// Compacta: guarda el resumen actualizado y reemplaza el historial por la
+// ventana reciente. Lo viejo queda condensado en summary (ahorra tokens).
+export function compactConversation(agentId: string, phone: string, summary: string, recentMessages: StoredMessage[]): void {
+  db.prepare(`
+    INSERT INTO conversations (agent_id, phone, messages, cart, summary, last_activity)
+    VALUES (?, ?, ?, ?, ?, unixepoch())
+    ON CONFLICT(agent_id, phone) DO UPDATE SET messages = excluded.messages, summary = excluded.summary
+  `).run(agentId, phone, JSON.stringify(recentMessages), JSON.stringify(getCart(agentId, phone)), summary);
 }
 
 export function getCart(agentId: string, phone: string): CartItem[] {

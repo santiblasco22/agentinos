@@ -110,7 +110,7 @@ export interface Message { role: 'user' | 'assistant'; content: string; ts: numb
 export const getConversations = (agentId: string) =>
   request<ConversationSummary[]>(`/agents/${agentId}/conversations`);
 export const getConversation = (agentId: string, phone: string) =>
-  request<Message[]>(`/agents/${agentId}/conversations/${encodeURIComponent(phone)}`);
+  request<{ messages: Message[]; summary: string }>(`/agents/${agentId}/conversations/${encodeURIComponent(phone)}`);
 
 export interface AgentStats {
   messagesToday: number; messagesTotal: number;
