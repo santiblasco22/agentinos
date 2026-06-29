@@ -50,7 +50,7 @@ export default function AgentPage() {
   const load = useCallback(async () => {
     const a = await getAgent(id);
     setAgent(a);
-    setForm({ ...a, whatsappNumber: a.whatsappNumber?.replace('whatsapp:', '') ?? '' });
+    setForm({ ...a, whatsappNumber: a.whatsappNumber?.replace('whatsapp:', '') ?? '', notifyPhone: a.notifyPhone?.replace('whatsapp:', '') ?? '' });
     if (a.mode === 'ecommerce') setProducts(await getProducts(id));
     else setServices(await getServices(id));
     setStats(await getAgentStats(id));
@@ -81,7 +81,7 @@ export default function AgentPage() {
       const payload = { ...data, whatsappNumber: data.whatsappNumber ? `whatsapp:${data.whatsappNumber}` : data.whatsappNumber };
       const updated = await updateAgent(id, payload);
       setAgent(updated);
-      setForm({ ...updated, whatsappNumber: updated.whatsappNumber?.replace('whatsapp:', '') ?? '' });
+      setForm({ ...updated, whatsappNumber: updated.whatsappNumber?.replace('whatsapp:', '') ?? '', notifyPhone: updated.notifyPhone?.replace('whatsapp:', '') ?? '' });
       toast.success('Cambios guardados');
     } catch (e) { toast.error('Error al guardar'); }
     finally { setSaving(false); }
@@ -211,6 +211,11 @@ export default function AgentPage() {
             <div>
               <label className="block text-xs font-semibold mb-1.5" style={{ color: '#6B7280' }}>NÚMERO WHATSAPP</label>
               <input className="input-dark" value={form.whatsappNumber ?? ''} onChange={e => setForm({ ...form, whatsappNumber: e.target.value })} placeholder="+54911..." />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#6B7280' }}>NÚMERO DE AVISOS (derivar a humano)</label>
+              <input className="input-dark" value={form.notifyPhone ?? ''} onChange={e => setForm({ ...form, notifyPhone: e.target.value })} placeholder="+54911... (tu WhatsApp)" />
+              <p className="text-xs mt-1" style={{ color: '#6B7280' }}>Cuando un cliente pida hablar con una persona, te avisamos acá y pausamos el bot. Si lo dejás vacío, usamos el teléfono de tu cuenta.</p>
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1.5" style={{ color: '#6B7280' }}>TOKEN MERCADOPAGO</label>

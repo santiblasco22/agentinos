@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getAgent, getConversations, getConversation, type Agent, type ConversationSummary, type Message } from '../../../../lib/api';
+import { getAgent, getConversations, getConversation, pauseConversation, resumeConversation, type Agent, type ConversationSummary, type Message } from '../../../../lib/api';
 import { isLoggedIn } from '../../../../lib/auth';
 import Navbar from '../../../../components/Navbar';
 import { Character, type CharacterType } from '../../../../components/characters';
-import { ArrowLeft, MessageCircle, User, Bot } from 'lucide-react';
+import { toast } from '../../../../components/Toaster';
+import { ArrowLeft, MessageCircle, User, Bot, Hand, Play } from 'lucide-react';
 
 function timeAgo(ts: number): string {
   const diff = Math.floor((Date.now() / 1000 - ts));
@@ -25,16 +26,26 @@ export default function ConversationsPage() {
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [summary, setSummary] = useState('');
+  const [paused, setPaused] = useState(false);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
 
   const loadConversation = useCallback(async (phone: string) => {
     setLoadingMsgs(true);
     setSelectedPhone(phone);
-    const { messages: msgs, summary: sum } = await getConversation(id, phone);
+    const { messages: msgs, summary: sum, paused: p } = await getConversation(id, phone);
     setMessages(msgs);
     setSummary(sum);
+    setPaused(p);
     setLoadingMsgs(false);
   }, [id]);
+
+  const togglePause = async () => {
+    if (!selectedPhone) return;
+    const res = paused ? await resumeConversation(id, selectedPhone) : await pauseConversation(id, selectedPhone);
+    setPaused(res.paused);
+    toast.success(res.paused ? 'Bot en pausa — atendés vos' : 'Bot reactivado');
+    getConversations(id).then(setConvList);
+  };
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/'); return; }
@@ -83,6 +94,11 @@ export default function ConversationsPage() {
                 <span className="text-xs font-mono truncate" style={{ color: '#F0F4FF' }}>
                   {conv.phone.replace('whatsapp:', '')}
                 </span>
+                {conv.paused && (
+                  <span className="ml-auto flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }} title="Derivada a humano — bot en pausa">
+                    <Hand size={9} /> Humano
+                  </span>
+                )}
               </div>
               <p className="text-xs truncate ml-9" style={{ color: '#6B7280' }}>{conv.lastMessage}</p>
               <div className="flex justify-between mt-1 ml-9">
@@ -112,7 +128,23 @@ export default function ConversationsPage() {
                   <div className="font-mono text-sm font-semibold">{selectedPhone.replace('whatsapp:', '')}</div>
                   <div className="text-xs" style={{ color: '#6B7280' }}>{messages.length} mensajes</div>
                 </div>
+                <button
+                  onClick={togglePause}
+                  className="ml-auto flex items-center gap-1.5 text-xs font-semibold py-1.5 px-3 rounded-lg transition-all"
+                  style={paused
+                    ? { background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }
+                    : { background: 'rgba(245,158,11,0.12)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)' }}
+                  title={paused ? 'Volver a dejar que el bot responda' : 'Tomar la conversación: el bot deja de responder'}
+                >
+                  {paused ? <><Play size={13} /> Reactivar bot</> : <><Hand size={13} /> Tomar conversación</>}
+                </button>
               </div>
+
+              {paused && (
+                <div className="px-4 py-2 flex items-center gap-2 text-xs" style={{ background: 'rgba(245,158,11,0.08)', color: '#F59E0B', borderBottom: '1px solid rgba(245,158,11,0.15)' }}>
+                  <Hand size={13} /> Conversación derivada a una persona — el bot está en pausa para este chat.
+                </div>
+              )}
 
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
                 {!loadingMsgs && summary && (

@@ -53,6 +53,7 @@ export interface Agent {
   character: string;
   mode: 'ecommerce' | 'services';
   whatsappNumber: string;
+  notifyPhone: string;
   mercadopagoToken: string;
   customPrompt: string;
   knowledge: string;
@@ -104,13 +105,17 @@ export const deleteService = (id: string) =>
   request<void>(`/services/${id}`, { method: 'DELETE' });
 
 // Conversations
-export interface ConversationSummary { phone: string; lastMessage: string; messageCount: number; lastActivity: number; }
+export interface ConversationSummary { phone: string; lastMessage: string; messageCount: number; lastActivity: number; paused: boolean; }
 export interface Message { role: 'user' | 'assistant'; content: string; ts: number; }
 
 export const getConversations = (agentId: string) =>
   request<ConversationSummary[]>(`/agents/${agentId}/conversations`);
 export const getConversation = (agentId: string, phone: string) =>
-  request<{ messages: Message[]; summary: string }>(`/agents/${agentId}/conversations/${encodeURIComponent(phone)}`);
+  request<{ messages: Message[]; summary: string; paused: boolean }>(`/agents/${agentId}/conversations/${encodeURIComponent(phone)}`);
+export const pauseConversation = (agentId: string, phone: string) =>
+  request<{ paused: boolean }>(`/agents/${agentId}/conversations/${encodeURIComponent(phone)}/pause`, { method: 'POST' });
+export const resumeConversation = (agentId: string, phone: string) =>
+  request<{ paused: boolean }>(`/agents/${agentId}/conversations/${encodeURIComponent(phone)}/resume`, { method: 'POST' });
 
 export interface AgentStats {
   messagesToday: number; messagesTotal: number;

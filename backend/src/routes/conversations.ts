@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth';
-import { getAgentById, getConversationList, getMessages, getConversationSummary, getAgentStats } from '../db/database';
+import { getAgentById, getConversationList, getMessages, getConversationSummary, isConversationPaused, setConversationPaused, getAgentStats } from '../db/database';
 
 const router = Router();
 router.use(requireAuth);
@@ -18,7 +18,23 @@ router.get('/agents/:id/conversations/:phone', (req: Request, res: Response) => 
   res.json({
     messages: getMessages(req.params.id, phone),
     summary: getConversationSummary(req.params.id, phone),
+    paused: isConversationPaused(req.params.id, phone),
   });
+});
+
+// Pausar (tomar la conversación) o reactivar el bot para un chat.
+router.post('/agents/:id/conversations/:phone/pause', (req: Request, res: Response) => {
+  const agent = getAgentById(req.params.id);
+  if (!agent || agent.userId !== req.userId) { res.status(404).json({ error: 'No encontrado' }); return; }
+  setConversationPaused(req.params.id, decodeURIComponent(req.params.phone), true);
+  res.json({ paused: true });
+});
+
+router.post('/agents/:id/conversations/:phone/resume', (req: Request, res: Response) => {
+  const agent = getAgentById(req.params.id);
+  if (!agent || agent.userId !== req.userId) { res.status(404).json({ error: 'No encontrado' }); return; }
+  setConversationPaused(req.params.id, decodeURIComponent(req.params.phone), false);
+  res.json({ paused: false });
 });
 
 const MODEL_PRICE_PER_MILLION: Record<string, number> = {

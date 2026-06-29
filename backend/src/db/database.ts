@@ -100,6 +100,9 @@ function ensureColumn(table: string, column: string, definition: string): void {
 ensureColumn('users', 'company', 'TEXT');
 ensureColumn('users', 'phone', 'TEXT');
 ensureColumn('conversations', 'summary', "TEXT NOT NULL DEFAULT ''");
+// Derivar a humano: número de aviso por agente + flag de pausa por conversación.
+ensureColumn('agents', 'notify_phone', 'TEXT');
+ensureColumn('conversations', 'paused', 'INTEGER NOT NULL DEFAULT 0');
 
 // Entrenamiento del agente: conocimiento del negocio, FAQs y ejemplos de conversación.
 ensureColumn('agents', 'knowledge', "TEXT NOT NULL DEFAULT ''");
@@ -172,6 +175,7 @@ function rowToAgent(row: any): Agent {
     character: row.character,
     mode: row.mode,
     whatsappNumber: row.whatsapp_number ?? '',
+    notifyPhone: row.notify_phone ?? '',
     mercadopagoToken: row.mercadopago_token,
     customPrompt: row.custom_prompt,
     knowledge: row.knowledge ?? '',
@@ -208,16 +212,17 @@ export function normalizeWhatsapp(raw: unknown): string | null {
 export function createAgent(userId: string, data: Partial<Agent>): Agent {
   const id = crypto.randomUUID();
   db.prepare(`
-    INSERT INTO agents (id, user_id, name, character, mode, whatsapp_number, mercadopago_token,
+    INSERT INTO agents (id, user_id, name, character, mode, whatsapp_number, notify_phone, mercadopago_token,
       custom_prompt, knowledge, faqs, examples, integrations, model, currency, timezone, working_hours, working_days,
       max_tokens, max_responses_per_day, max_responses_total, is_active, color)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id, userId,
     data.name ?? 'Nuevo Agente',
     data.character ?? 'gaucho',
     data.mode ?? 'ecommerce',
     normalizeWhatsapp(data.whatsappNumber),
+    normalizeWhatsapp(data.notifyPhone),
     data.mercadopagoToken ?? '',
     data.customPrompt ?? '',
     data.knowledge ?? '',
@@ -258,7 +263,7 @@ export function updateAgent(id: string, data: Partial<Agent>): void {
 
   const directMap: Record<string, string> = {
     name: 'name', character: 'character', mode: 'mode',
-    whatsappNumber: 'whatsapp_number', mercadopagoToken: 'mercadopago_token',
+    whatsappNumber: 'whatsapp_number', notifyPhone: 'notify_phone', mercadopagoToken: 'mercadopago_token',
     customPrompt: 'custom_prompt', model: 'model', currency: 'currency',
     timezone: 'timezone', maxTokens: 'max_tokens',
     maxResponsesPerDay: 'max_responses_per_day', maxResponsesTotal: 'max_responses_total',
@@ -269,7 +274,7 @@ export function updateAgent(id: string, data: Partial<Agent>): void {
     const val = (data as any)[key];
     if (val !== undefined) {
       fields.push(`${col} = ?`);
-      values.push(key === 'whatsappNumber' ? normalizeWhatsapp(val) : val);
+      values.push((key === 'whatsappNumber' || key === 'notifyPhone') ? normalizeWhatsapp(val) : val);
     }
   }
   if (data.isActive !== undefined) { fields.push('is_active = ?'); values.push(data.isActive ? 1 : 0); }
@@ -507,6 +512,20 @@ export function addMessage(agentId: string, phone: string, role: 'user' | 'assis
   `).run(agentId, phone, JSON.stringify(trimmed), JSON.stringify(cart));
 }
 
+// Pausa / reactivación de una conversación (derivación a humano).
+export function setConversationPaused(agentId: string, phone: string, paused: boolean): void {
+  db.prepare(`
+    INSERT INTO conversations (agent_id, phone, messages, cart, paused, last_activity)
+    VALUES (?, ?, '[]', '[]', ?, unixepoch())
+    ON CONFLICT(agent_id, phone) DO UPDATE SET paused = excluded.paused
+  `).run(agentId, phone, paused ? 1 : 0);
+}
+
+export function isConversationPaused(agentId: string, phone: string): boolean {
+  const row = db.prepare('SELECT paused FROM conversations WHERE agent_id = ? AND phone = ?').get(agentId, phone) as any;
+  return row?.paused === 1;
+}
+
 // Resumen acumulado de la conversación (memoria de lo más viejo, ya compactado).
 export function getConversationSummary(agentId: string, phone: string): string {
   const row = db.prepare('SELECT summary FROM conversations WHERE agent_id = ? AND phone = ?').get(agentId, phone) as any;
@@ -536,8 +555,8 @@ export function saveCart(agentId: string, phone: string, cart: CartItem[]): void
   `).run(agentId, phone, JSON.stringify(cart));
 }
 
-export function getConversationList(agentId: string): { phone: string; lastMessage: string; messageCount: number; lastActivity: number }[] {
-  return (db.prepare('SELECT phone, messages, last_activity FROM conversations WHERE agent_id = ? ORDER BY last_activity DESC').all(agentId) as any[]).map((row) => {
+export function getConversationList(agentId: string): { phone: string; lastMessage: string; messageCount: number; lastActivity: number; paused: boolean }[] {
+  return (db.prepare('SELECT phone, messages, last_activity, paused FROM conversations WHERE agent_id = ? ORDER BY last_activity DESC').all(agentId) as any[]).map((row) => {
     const msgs: StoredMessage[] = JSON.parse(row.messages);
     const last = msgs[msgs.length - 1];
     return {
@@ -545,6 +564,7 @@ export function getConversationList(agentId: string): { phone: string; lastMessa
       lastMessage: last ? last.content.slice(0, 80) : '',
       messageCount: msgs.length,
       lastActivity: row.last_activity,
+      paused: row.paused === 1,
     };
   });
 }
