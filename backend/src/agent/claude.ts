@@ -1,8 +1,9 @@
 import { getSystemPrompt } from './prompts';
 import { ecommerceTools, servicesTools, executeTool } from './tools';
-import { getMessages, addMessage } from '../db/database';
+import { getMessages, addMessage, getConversationSummary } from '../db/database';
 import { getProvider, type LLMTurn } from './llm';
 import { retrieveContext } from './rag';
+import { maybeCompact } from './memory';
 import type { Agent } from '../types';
 
 const MAX_ROUNDS = 10;
@@ -11,6 +12,11 @@ export async function handleMessage(agent: Agent, phone: string, userMessage: st
   const tools = agent.mode === 'ecommerce' ? ecommerceTools : servicesTools;
   let system = getSystemPrompt(agent);
   const provider = getProvider(agent.model);
+
+  // Memoria: el resumen de lo viejo va como contexto en el system prompt; los
+  // últimos mensajes crudos van como turnos. Así no reenviamos todo el historial.
+  const summary = getConversationSummary(agent.id, phone);
+  if (summary) system += `\n\nResumen de lo conversado hasta ahora con este cliente:\n${summary}`;
 
   // RAG (apagado por defecto): si está activo, suma contexto recuperado del
   // conocimiento del negocio relevante a la consulta actual.
@@ -63,6 +69,8 @@ export async function handleMessage(agent: Agent, phone: string, userMessage: st
     // end_turn (u otro): respuesta final.
     const text = response.text.trim() || '(sin respuesta)';
     addMessage(agent.id, phone, 'assistant', text);
+    // Compacta la memoria en segundo plano (no demora la respuesta al cliente).
+    void maybeCompact(agent, phone).catch((e) => console.error('[memory] compactación falló:', e));
     return text;
   }
 

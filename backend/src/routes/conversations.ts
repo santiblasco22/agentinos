@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth';
-import { getAgentById, getConversationList, getMessages, getAgentStats } from '../db/database';
+import { getAgentById, getConversationList, getMessages, getConversationSummary, getAgentStats } from '../db/database';
 
 const router = Router();
 router.use(requireAuth);
@@ -15,7 +15,10 @@ router.get('/agents/:id/conversations/:phone', (req: Request, res: Response) => 
   const agent = getAgentById(req.params.id);
   if (!agent || agent.userId !== req.userId) { res.status(404).json({ error: 'No encontrado' }); return; }
   const phone = decodeURIComponent(req.params.phone);
-  res.json(getMessages(req.params.id, phone));
+  res.json({
+    messages: getMessages(req.params.id, phone),
+    summary: getConversationSummary(req.params.id, phone),
+  });
 });
 
 const MODEL_PRICE_PER_MILLION: Record<string, number> = {

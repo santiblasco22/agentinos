@@ -24,13 +24,15 @@ export default function ConversationsPage() {
   const [convList, setConvList] = useState<ConversationSummary[]>([]);
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [summary, setSummary] = useState('');
   const [loadingMsgs, setLoadingMsgs] = useState(false);
 
   const loadConversation = useCallback(async (phone: string) => {
     setLoadingMsgs(true);
     setSelectedPhone(phone);
-    const msgs = await getConversation(id, phone);
+    const { messages: msgs, summary: sum } = await getConversation(id, phone);
     setMessages(msgs);
+    setSummary(sum);
     setLoadingMsgs(false);
   }, [id]);
 
@@ -113,6 +115,15 @@ export default function ConversationsPage() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                {!loadingMsgs && summary && (
+                  <div className="glass-card p-3 mb-1" style={{ background: 'rgba(0,212,255,0.05)', borderColor: 'rgba(0,212,255,0.2)' }}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Bot size={13} color="#00D4FF" />
+                      <span className="label-xs" style={{ color: '#00D4FF' }}>Memoria de la conversación</span>
+                    </div>
+                    <p className="text-xs leading-relaxed" style={{ color: '#9CA3AF' }}>{summary}</p>
+                  </div>
+                )}
                 {loadingMsgs && (
                   <div className="flex items-center justify-center py-8">
                     <div className="character-float"><Character type={agent.character as CharacterType} size={60} /></div>
