@@ -2,14 +2,20 @@ import { getSystemPrompt } from './prompts';
 import { ecommerceTools, servicesTools, executeTool } from './tools';
 import { getMessages, addMessage } from '../db/database';
 import { getProvider, type LLMTurn } from './llm';
+import { retrieveContext } from './rag';
 import type { Agent } from '../types';
 
 const MAX_ROUNDS = 10;
 
 export async function handleMessage(agent: Agent, phone: string, userMessage: string): Promise<string> {
   const tools = agent.mode === 'ecommerce' ? ecommerceTools : servicesTools;
-  const system = getSystemPrompt(agent);
+  let system = getSystemPrompt(agent);
   const provider = getProvider(agent.model);
+
+  // RAG (apagado por defecto): si está activo, suma contexto recuperado del
+  // conocimiento del negocio relevante a la consulta actual.
+  const ragContext = await retrieveContext(agent, userMessage);
+  if (ragContext) system += `\n\n${ragContext}`;
 
   addMessage(agent.id, phone, 'user', userMessage);
   const history = getMessages(agent.id, phone);

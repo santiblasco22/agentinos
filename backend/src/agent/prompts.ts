@@ -37,10 +37,19 @@ export function getSystemPrompt(agent: Agent): string {
     year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
   }).format(new Date());
 
+  const guardrails = `REGLAS CRÍTICAS (no las rompas nunca):
+- NUNCA inventes ni adivines precios, stock, disponibilidad, productos, servicios, horarios ni datos del negocio. Esa información SOLO sale de tus herramientas o del bloque "Conocimiento del negocio".
+- Antes de afirmar un precio, stock o disponibilidad, consultá la herramienta correspondiente. Si no la consultaste, no lo afirmes.
+- Si la herramienta no devuelve el dato, o no tenés esa información, decilo con naturalidad ("No tengo ese dato a mano, lo consulto con el equipo y te aviso") y NO improvises un valor.
+- No prometas descuentos, plazos de entrega ni condiciones que no estén explícitas en tu información.
+- Ante la duda, preguntá o derivá; nunca completes con suposiciones.`;
+
   const base = `Sos el asistente virtual de "${agent.name}", atendiendo por WhatsApp.
 Respondé siempre en español, de forma natural y concisa (mensajes cortos, ideales para WhatsApp).
 Usá emojis con moderación. Precios en ${agent.currency}.
 Fecha y hora actual: ${ahora} (zona ${agent.timezone}). Usala para interpretar "hoy", "mañana", "el viernes", etc.
+
+${guardrails}
 ${agent.customPrompt ? `\nInstrucciones específicas:\n${agent.customPrompt}` : ''}${getTrainingBlock(agent)}`;
 
   if (agent.mode === 'ecommerce') {

@@ -78,19 +78,24 @@ store/
 `gaucho`, `tanguera`, `asador`, `futbolero`, `cientifica`, `rockero`, `matera`, `porteno`, `inmobiliario`
 Definidos en `frontend/components/characters/index.tsx` (avatar SVG + CHARACTER_INFO) y validados en `backend/routes/agents.ts` (VALID_CHARACTERS) + `backend/types.ts`.
 
-## Modelos disponibles
+## Modelos disponibles (multi-proveedor)
 
-- `claude-fable-5` — máxima capacidad (premium; clasificadores pueden devolver `stop_reason: 'refusal'`)
-- `claude-opus-4-8` — calidad máxima (default)
-- `claude-sonnet-4-6` — balance calidad/costo
-- `claude-haiku-4-5-20251001` — alto volumen
+- `glm-4-flash` — GLM (Zhipu), nivel "IA Rápida"
+- `glm-4.6` — GLM (Zhipu), nivel "IA Avanzada" (**default** de nuevos agentes)
+- `claude-opus-4-8` — Claude, nivel "IA Premium"
+- `claude-fable-5` — Claude, nivel "IA Premium+" (clasificadores pueden devolver `stop_reason: 'refusal'`)
 
-La lista de modelos está en: `backend/routes/agents.ts` (VALID_MODELS) y `backend/routes/conversations.ts` (costos). En el **frontend NO se muestran nombres de modelos**: se exponen como niveles "IA Rápida / Avanzada / Premium / Premium+" mapeados en `frontend/lib/tiers.ts` (`AI_TIERS` + `tierFor`). Las dropdowns (`agents/new`, `agents/[id]`) y el badge de `AgentCard` usan ese helper. Al agregar un modelo: tocar los 2 lugares del backend + `lib/tiers.ts`.
+**Capa de proveedor** en `backend/agent/llm/`: interfaz común `LLMProvider` con tipos normalizados (turnos, tool-calls, stop reasons). Adapters `anthropic.ts` (Claude SDK) y `glm.ts` (Zhipu, API estilo OpenAI, traduce tool-calling). `getProvider(model)` rutea por prefijo: `glm-` → GLM, resto → Anthropic. El loop agéntico (`agent/claude.ts`) es agnóstico del proveedor. Las tools se definen como `LLMTool` (`inputSchema`) en `agent/tools.ts`.
+
+GLM usa key **global de plataforma** (`GLM_API_KEY` en `.env`, opcional `GLM_BASE_URL` para BigModel vs Z.ai). La lista de modelos está en: `backend/routes/agents.ts` (VALID_MODELS) y `backend/routes/conversations.ts` (costos). En el **frontend NO se muestran nombres de modelos**: niveles "IA Rápida / Avanzada / Premium / Premium+" en `frontend/lib/tiers.ts` (`AI_TIERS` + `tierFor`). Al agregar un modelo: 2 lugares del backend + `lib/tiers.ts` (+ adapter si es proveedor nuevo).
 
 ## Variables de entorno backend (`.env`)
 
 ```
 ANTHROPIC_API_KEY=
+GLM_API_KEY=         # key global de GLM (Zhipu) para niveles 1/2
+GLM_BASE_URL=        # opcional; default Z.ai. BigModel: https://open.bigmodel.cn/api/paas/v4
+RAG_ENABLED=         # 'true' enciende el scaffold de RAG (default apagado)
 JWT_SECRET=
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
@@ -103,6 +108,8 @@ DB_PATH=./agentinos.db
 ## Notas importantes
 
 - El DB es SQLite local (`backend/agentinos.db`), no hay ORM, queries directas con `better-sqlite3`
+- **Anti-alucinación**: `agent/prompts.ts` inyecta "REGLAS CRÍTICAS" (no inventar precios/stock/disponibilidad; consultar tools; si no hay dato, decirlo). El catálogo siempre sale de tools, no del prompt.
+- **RAG** (`agent/rag/`): scaffold apagado por defecto (`RAG_ENABLED`). v0 hace recuperación por keywords sobre knowledge+faqs; se reemplaza por embeddings detrás de `retrieveContext()` cuando un cliente tenga catálogo grande. Se inyecta al system prompt en `agent/claude.ts` solo si está activo.
 - El webhook de Twilio espera `From` y `Body` en el body del POST
 - MercadoPago usa webhooks para confirmar pagos; necesita `PUBLIC_URL` accesible
 - Los avatares SVG están en `frontend/src/components/characters/index.tsx` y también en `Documents/agentinos/avatars/`
