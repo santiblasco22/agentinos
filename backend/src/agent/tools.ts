@@ -1,7 +1,15 @@
 import * as db from '../db/database';
 import { createPaymentLink } from '../services/mercadopago';
+import { triggerHandoff } from './handoff';
 import type { Agent } from '../types';
 import type { LLMTool } from './llm/types';
+
+// Tool compartida: derivar a una persona del equipo (humano).
+const requestHumanTool: LLMTool = {
+  name: 'request_human',
+  description: 'Derivá la conversación a una persona del equipo cuando el cliente lo pida explícitamente, esté muy molesto/frustrado, o pida algo que no podés resolver con tus herramientas. Avisa al dueño y pone el bot en pausa para este chat.',
+  inputSchema: { type: 'object', properties: { reason: { type: 'string', description: 'Motivo breve de la derivación (lo que pidió el cliente).' } } },
+};
 
 export const ecommerceTools: LLMTool[] = [
   { name: 'list_products', description: 'Lista productos disponibles, opcionalmente por categoría.', inputSchema: { type: 'object', properties: { category: { type: 'string' } } } },
@@ -12,6 +20,7 @@ export const ecommerceTools: LLMTool[] = [
   { name: 'view_cart', description: 'Muestra el carrito actual con totales.', inputSchema: { type: 'object', properties: {} } },
   { name: 'clear_cart', description: 'Vacía el carrito.', inputSchema: { type: 'object', properties: {} } },
   { name: 'create_payment', description: 'Crea link de pago MercadoPago. Solo cuando el cliente confirme la compra.', inputSchema: { type: 'object', properties: {} } },
+  requestHumanTool,
 ];
 
 export const servicesTools: LLMTool[] = [
@@ -22,6 +31,7 @@ export const servicesTools: LLMTool[] = [
   { name: 'view_booking', description: 'Muestra la reserva activa del cliente.', inputSchema: { type: 'object', properties: {} } },
   { name: 'cancel_booking', description: 'Cancela la reserva activa.', inputSchema: { type: 'object', properties: {} } },
   { name: 'create_payment', description: 'Crea link de pago MercadoPago para la reserva.', inputSchema: { type: 'object', properties: {} } },
+  requestHumanTool,
 ];
 
 function fmt(amount: number, currency: string): string {
@@ -140,6 +150,9 @@ export async function executeTool(name: string, input: Record<string, unknown>, 
         if (!b) return 'No hay reserva activa.';
         db.cancelBooking(b.id);
         return 'Reserva cancelada.';
+      }
+      case 'request_human': {
+        return await triggerHandoff(agent, phone, input.reason as string | undefined);
       }
       default:
         return `Herramienta desconocida: ${name}`;

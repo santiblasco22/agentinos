@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { getAgentByNumber, incrementResponses } from '../db/database';
+import { getAgentByNumber, incrementResponses, isConversationPaused, addMessage } from '../db/database';
 import { handleMessage } from '../agent/claude';
+import { looksLikeHandoff, triggerHandoff } from '../agent/handoff';
 import { sendWhatsApp } from '../services/twilio';
 
 const router = Router();
@@ -22,6 +23,23 @@ router.post('/webhook', (req: Request, res: Response) => {
   }
 
   if (!agent.isActive) return;
+
+  // Conversación derivada a humano: el bot no responde, solo registra el mensaje
+  // para que el dueño lo vea en el panel.
+  if (isConversationPaused(agent.id, from)) {
+    addMessage(agent.id, from, 'user', body);
+    console.log(`[${agent.name}] (en pausa) ${from}: ${body.slice(0, 60)}`);
+    return;
+  }
+
+  // Pedido explícito de hablar con una persona: derivamos sin pasar por el modelo.
+  if (looksLikeHandoff(body)) {
+    addMessage(agent.id, from, 'user', body);
+    triggerHandoff(agent, from, body)
+      .then((reply) => { addMessage(agent.id, from, 'assistant', reply); return sendWhatsApp(from, reply, to); })
+      .catch((err) => console.error('[handoff webhook]', err));
+    return;
+  }
 
   if (agent.maxResponsesPerDay > 0 && agent.responsesToday >= agent.maxResponsesPerDay) {
     sendWhatsApp(from, 'Lo sentimos, el servicio alcanzó su límite diario. Intentá mañana. 🙏', to).catch(console.error);

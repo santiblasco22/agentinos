@@ -36,6 +36,7 @@ export interface Agent {
   character: CharacterType;
   mode: AgentMode;
   whatsappNumber: string;
+  notifyPhone: string;
   mercadopagoToken: string;
   customPrompt: string;
   knowledge: string;

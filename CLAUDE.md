@@ -110,6 +110,7 @@ DB_PATH=./agentinos.db
 - El DB es SQLite local (`backend/agentinos.db`), no hay ORM, queries directas con `better-sqlite3`
 - **Anti-alucinación**: `agent/prompts.ts` inyecta "REGLAS CRÍTICAS" (no inventar precios/stock/disponibilidad; consultar tools; si no hay dato, decirlo). El catálogo siempre sale de tools, no del prompt.
 - **RAG** (`agent/rag/`): scaffold apagado por defecto (`RAG_ENABLED`). v0 hace recuperación por keywords sobre knowledge+faqs; se reemplaza por embeddings detrás de `retrieveContext()` cuando un cliente tenga catálogo grande. Se inyecta al system prompt en `agent/claude.ts` solo si está activo.
+- **Derivar a humano** (`agent/handoff.ts`): el cliente puede pedir una persona por frase (`looksLikeHandoff`, intercepción determinística en el webhook) o el modelo lo decide con la tool `request_human`. `triggerHandoff` pausa la conversación (`conversations.paused`), avisa al dueño por WhatsApp (a `agents.notify_phone`, y si está vacío al `phone` de la cuenta) y devuelve un mensaje al cliente. Mientras está en pausa el webhook registra los mensajes pero el bot no responde. El dueño pausa/reactiva desde la vista de conversaciones (`POST /agents/:id/conversations/:phone/pause|resume`).
 - El webhook de Twilio espera `From` y `Body` en el body del POST
 - MercadoPago usa webhooks para confirmar pagos; necesita `PUBLIC_URL` accesible
 - Los avatares SVG están en `frontend/src/components/characters/index.tsx` y también en `Documents/agentinos/avatars/`
