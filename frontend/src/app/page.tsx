@@ -61,10 +61,7 @@ export default function AuthPage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [randomChar, setRandomChar] = useState<CharacterType>(CHARACTERS[0]);
-  useEffect(() => {
-    setRandomChar(CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)]);
-  }, []);
+  const [randomChar] = useState<CharacterType>(() => CHARACTERS[0]);
 
   useEffect(() => {
     if (isLoggedIn()) { router.push('/dashboard'); return; }
@@ -165,7 +162,9 @@ export default function AuthPage() {
         <div className="w-full max-w-md">
           {/* Logo mobile */}
           <div className="flex lg:hidden flex-col items-center mb-6">
-            <div className="character-float mb-2"><Character type={randomChar} size={72} isActive /></div>
+            <div className="mb-2">
+              <Character type={randomChar} size={72} isActive />
+            </div>
             <span className="text-2xl font-black tracking-widest gradient-text">AGENTINOS</span>
           </div>
 
@@ -265,12 +264,12 @@ export default function AuthPage() {
               </button>
             </form>
 
-            <p className="text-sm text-center mt-5" style={{ color: '#6B7280' }}>
+            <div className="text-sm text-center mt-5" style={{ color: '#6B7280' }}>
               {isRegister ? '¿Ya tenés cuenta?' : '¿Primera vez en Agentinos?'}{' '}
               <button type="button" onClick={() => switchMode(isRegister ? 'login' : 'register')} className="font-semibold gradient-text">
                 {isRegister ? 'Iniciá sesión' : 'Creá tu cuenta'}
               </button>
-            </p>
+            </div>
           </div>
         </div>
       </div>
