@@ -38,9 +38,10 @@ function RobotBase({
   children?: React.ReactNode;
 }) {
   const floatClass = isActive ? 'character-float-fast' : 'character-float';
+  const height = Math.round(size * 1.2);
   return (
-    <div className={floatClass} style={{ width: size, height: size * 1.2, display: 'inline-block' }}>
-      <svg viewBox="0 0 100 120" width={size} height={size * 1.2} xmlns="http://www.w3.org/2000/svg">
+    <div className={floatClass} style={{ width: size, height, display: 'inline-block' }}>
+      <svg viewBox="0 0 100 120" width={size} height={height} xmlns="http://www.w3.org/2000/svg">
         {/* Shadow */}
         <ellipse cx="50" cy="115" rx="22" ry="5" fill="rgba(0,0,0,0.3)" />
         {/* Body */}
@@ -272,7 +273,7 @@ const PNG_CHARACTERS = new Set<CharacterType>();
 
 function PngCharacter({ type, size = 100, isActive }: { type: CharacterType } & CharacterProps) {
   return (
-    <div className="character-png-wrap" style={{ width: size, height: size * 1.2 }}>
+    <div className="character-png-wrap" style={{ width: size, height: Math.round(size * 1.2) }}>
       <img
         src={`/characters/${type}.png`}
         alt={CHARACTER_INFO[type].name}
